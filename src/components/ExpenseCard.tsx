@@ -33,10 +33,18 @@ const ExpenseCard = ({
         </div>
       </div>
       
-      <div className="mt-3">
-        <div className="text-sm text-muted-foreground mb-1">Valor:</div>
-        <div className="font-medium text-foreground">
-          {formatCurrency(expense.amount)}
+      <div className="mt-3 space-y-2">
+        <div>
+          <div className="text-sm text-muted-foreground mb-1">Valor:</div>
+          <div className="font-medium text-foreground">
+            {formatCurrency(expense.amount)}
+          </div>
+        </div>
+        <div>
+          <div className="text-sm text-muted-foreground mb-1">Pago por:</div>
+          <div className="font-medium text-foreground">
+            {expense.paidByName}
+          </div>
         </div>
       </div>
     </div>

@@ -8,6 +8,7 @@ interface ParticipantCardProps {
   onRemove: (id: string) => void;
   onPaidChange: (id: string, paid: number) => void;
   formatCurrency: (value: number) => string;
+  readOnly?: boolean;
 }
 
 const ParticipantCard = ({
@@ -15,6 +16,7 @@ const ParticipantCard = ({
   onRemove,
   onPaidChange,
   formatCurrency,
+  readOnly = false,
 }: ParticipantCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedPaid, setEditedPaid] = useState(participant.paid.toString());
@@ -37,12 +39,14 @@ const ParticipantCard = ({
           <h3 className="font-medium text-foreground">{participant.name}</h3>
         </div>
         <div className="flex items-center space-x-1">
-          <button
-            onClick={handleEditSave}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 button-effect"
-          >
-            {isEditing ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
-          </button>
+          {!readOnly && (
+            <button
+              onClick={handleEditSave}
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 button-effect"
+            >
+              {isEditing ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+            </button>
+          )}
           <button
             onClick={() => onRemove(participant.id)}
             className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 button-effect"
@@ -53,8 +57,8 @@ const ParticipantCard = ({
       </div>
       
       <div className="mt-3">
-        <div className="text-sm text-muted-foreground mb-1">Já pagou:</div>
-        {isEditing ? (
+        <div className="text-sm text-muted-foreground mb-1">Total pago:</div>
+        {isEditing && !readOnly ? (
           <input
             type="number"
             value={editedPaid}

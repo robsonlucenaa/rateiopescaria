@@ -51,9 +51,14 @@ const SummaryCard = ({
             {expenses.map((expense) => (
               <div key={expense.id} className="flex justify-between items-center">
                 <span className="text-sm">{expense.description}</span>
-                <span className="text-sm font-medium">
-                  {formatCurrency(expense.amount)}
-                </span>
+                <div className="text-right">
+                  <span className="text-sm font-medium">
+                    {formatCurrency(expense.amount)}
+                  </span>
+                  <div className="text-xs text-muted-foreground">
+                    Pago por: {expense.paidByName}
+                  </div>
+                </div>
               </div>
             ))}
           </div>

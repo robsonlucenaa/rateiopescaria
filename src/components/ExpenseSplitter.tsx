@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { User, DollarSign, Plus, X } from "lucide-react";
@@ -16,6 +15,8 @@ export interface Expense {
   id: string;
   description: string;
   amount: number;
+  paidBy: string; // ID of the participant who paid
+  paidByName: string; // Name of the participant who paid
 }
 
 const ExpenseSplitter = () => {
@@ -26,6 +27,7 @@ const ExpenseSplitter = () => {
   const [newParticipantPaid, setNewParticipantPaid] = useState("");
   const [newExpenseDescription, setNewExpenseDescription] = useState("");
   const [newExpenseAmount, setNewExpenseAmount] = useState("");
+  const [newExpensePaidBy, setNewExpensePaidBy] = useState("");
   const [activeTab, setActiveTab] = useState<"participants" | "expenses" | "summary">("participants");
   const [totalAmount, setTotalAmount] = useState(0);
   const [amountPerPerson, setAmountPerPerson] = useState(0);
@@ -38,7 +40,20 @@ const ExpenseSplitter = () => {
     // Calculate amount per person
     const perPerson = participants.length > 0 ? total / participants.length : 0;
     setAmountPerPerson(perPerson);
-  }, [expenses, participants]);
+    
+    // Update participant paid amounts based on expenses
+    if (participants.length > 0 && expenses.length > 0) {
+      const updatedParticipants = participants.map(participant => {
+        const participantExpenses = expenses.filter(expense => expense.paidBy === participant.id);
+        const totalPaid = participantExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+        return {
+          ...participant,
+          paid: totalPaid
+        };
+      });
+      setParticipants(updatedParticipants);
+    }
+  }, [expenses, participants.length]);
 
   const addParticipant = () => {
     if (!newParticipantName.trim()) {
@@ -50,16 +65,13 @@ const ExpenseSplitter = () => {
       return;
     }
 
-    const paid = parseFloat(newParticipantPaid) || 0;
+    const newParticipant = {
+      id: Date.now().toString(),
+      name: newParticipantName,
+      paid: 0,
+    };
 
-    setParticipants([
-      ...participants,
-      {
-        id: Date.now().toString(),
-        name: newParticipantName,
-        paid,
-      },
-    ]);
+    setParticipants([...participants, newParticipant]);
 
     setNewParticipantName("");
     setNewParticipantPaid("");
@@ -76,6 +88,9 @@ const ExpenseSplitter = () => {
   };
 
   const removeParticipant = (id: string) => {
+    // Remove participant's expenses
+    setExpenses(expenses.filter(expense => expense.paidBy !== id));
+    // Remove participant
     setParticipants(participants.filter((p) => p.id !== id));
   };
 
@@ -99,32 +114,47 @@ const ExpenseSplitter = () => {
       return;
     }
 
-    setExpenses([
-      ...expenses,
-      {
-        id: Date.now().toString(),
-        description: newExpenseDescription,
-        amount,
-      },
-    ]);
+    if (!newExpensePaidBy) {
+      toast({
+        title: "Participante necessário",
+        description: "Por favor, selecione quem pagou esta despesa.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const payer = participants.find(p => p.id === newExpensePaidBy);
+    if (!payer) {
+      toast({
+        title: "Participante inválido",
+        description: "O participante selecionado não foi encontrado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newExpense = {
+      id: Date.now().toString(),
+      description: newExpenseDescription,
+      amount,
+      paidBy: newExpensePaidBy,
+      paidByName: payer.name
+    };
+
+    setExpenses([...expenses, newExpense]);
 
     setNewExpenseDescription("");
     setNewExpenseAmount("");
+    // Keep the selected participant for the next expense for convenience
 
     toast({
       title: "Despesa adicionada",
-      description: `${newExpenseDescription}: R$ ${amount.toFixed(2)}`,
+      description: `${newExpenseDescription}: R$ ${amount.toFixed(2)} (Pago por ${payer.name})`,
     });
   };
 
   const removeExpense = (id: string) => {
     setExpenses(expenses.filter((e) => e.id !== id));
-  };
-
-  const handleParticipantPaidChange = (id: string, paid: number) => {
-    setParticipants(
-      participants.map((p) => (p.id === id ? { ...p, paid } : p))
-    );
   };
 
   const formatCurrency = (value: number) => {
@@ -187,14 +217,6 @@ const ExpenseSplitter = () => {
                   className="flex-1 px-4 py-3 rounded-xl bg-background border input-effect focus:outline-none"
                   onKeyDown={(e) => e.key === "Enter" && addParticipant()}
                 />
-                <input
-                  type="number"
-                  placeholder="Valor pago (opcional)"
-                  value={newParticipantPaid}
-                  onChange={(e) => setNewParticipantPaid(e.target.value)}
-                  className="w-40 px-4 py-3 rounded-xl bg-background border input-effect focus:outline-none"
-                  onKeyDown={(e) => e.key === "Enter" && addParticipant()}
-                />
                 <button
                   onClick={addParticipant}
                   className="p-3 bg-primary text-white rounded-xl button-effect"
@@ -210,8 +232,9 @@ const ExpenseSplitter = () => {
                   key={participant.id}
                   participant={participant}
                   onRemove={removeParticipant}
-                  onPaidChange={handleParticipantPaidChange}
+                  onPaidChange={() => {}}
                   formatCurrency={formatCurrency}
+                  readOnly={true}
                 />
               ))}
             </div>
@@ -235,29 +258,46 @@ const ExpenseSplitter = () => {
               Adicione as despesas da pescaria
             </h2>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-col space-y-4">
               <input
                 type="text"
                 placeholder="Descrição (Ex: Isca, Gasolina)"
                 value={newExpenseDescription}
                 onChange={(e) => setNewExpenseDescription(e.target.value)}
-                className="flex-1 px-4 py-3 rounded-xl bg-background border input-effect focus:outline-none"
-                onKeyDown={(e) => e.key === "Enter" && addExpense()}
+                className="w-full px-4 py-3 rounded-xl bg-background border input-effect focus:outline-none"
               />
-              <input
-                type="number"
-                placeholder="Valor"
-                value={newExpenseAmount}
-                onChange={(e) => setNewExpenseAmount(e.target.value)}
-                className="w-40 px-4 py-3 rounded-xl bg-background border input-effect focus:outline-none"
-                onKeyDown={(e) => e.key === "Enter" && addExpense()}
-              />
-              <button
-                onClick={addExpense}
-                className="p-3 bg-primary text-white rounded-xl button-effect"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="number"
+                  placeholder="Valor"
+                  value={newExpenseAmount}
+                  onChange={(e) => setNewExpenseAmount(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-background border input-effect focus:outline-none"
+                  onKeyDown={(e) => e.key === "Enter" && addExpense()}
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <select
+                  value={newExpensePaidBy}
+                  onChange={(e) => setNewExpensePaidBy(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-background border input-effect focus:outline-none"
+                >
+                  <option value="">Quem pagou esta despesa?</option>
+                  {participants.map(participant => (
+                    <option key={participant.id} value={participant.id}>
+                      {participant.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={addExpense}
+                  className="p-3 bg-primary text-white rounded-xl button-effect"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
