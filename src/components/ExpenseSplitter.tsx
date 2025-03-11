@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { User, DollarSign, Plus, X } from "lucide-react";
+import { User, DollarSign, Plus, X, Share2, Copy } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
 import ParticipantCard from "./ParticipantCard";
 import ExpenseCard from "./ExpenseCard";
 import SummaryCard from "./SummaryCard";
@@ -19,8 +21,21 @@ export interface Expense {
   paidByName: string; // Name of the participant who paid
 }
 
+export interface FishingTripData {
+  participants: Participant[];
+  expenses: Expense[];
+}
+
+// Função para gerar ID aleatório para pescaria
+const generateTripId = () => {
+  return Math.random().toString(36).substring(2, 10);
+};
+
 const ExpenseSplitter = () => {
   const { toast } = useToast();
+  const { tripId } = useParams();
+  const navigate = useNavigate();
+  
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [newParticipantName, setNewParticipantName] = useState("");
@@ -31,6 +46,41 @@ const ExpenseSplitter = () => {
   const [activeTab, setActiveTab] = useState<"participants" | "expenses" | "summary">("participants");
   const [totalAmount, setTotalAmount] = useState(0);
   const [amountPerPerson, setAmountPerPerson] = useState(0);
+  const [currentTripId, setCurrentTripId] = useState<string>(tripId || generateTripId());
+  const [shareUrl, setShareUrl] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  // Carregar dados do localStorage baseado no tripId
+  useEffect(() => {
+    if (currentTripId) {
+      const savedData = localStorage.getItem(`fishing-trip-${currentTripId}`);
+      if (savedData) {
+        const parsedData: FishingTripData = JSON.parse(savedData);
+        setParticipants(parsedData.participants || []);
+        setExpenses(parsedData.expenses || []);
+      }
+      
+      // Se não temos um tripId na URL mas temos um currentTripId, atualizar a URL
+      if (!tripId && currentTripId) {
+        navigate(`/trip/${currentTripId}`, { replace: true });
+      }
+      
+      // Gerar URL de compartilhamento
+      const baseUrl = window.location.origin;
+      setShareUrl(`${baseUrl}/trip/${currentTripId}`);
+    }
+  }, [currentTripId, tripId, navigate]);
+
+  // Salvar dados no localStorage sempre que participants ou expenses mudarem
+  useEffect(() => {
+    if (currentTripId && (participants.length > 0 || expenses.length > 0)) {
+      const dataToSave: FishingTripData = {
+        participants,
+        expenses
+      };
+      localStorage.setItem(`fishing-trip-${currentTripId}`, JSON.stringify(dataToSave));
+    }
+  }, [participants, expenses, currentTripId]);
 
   useEffect(() => {
     // Calculate total expense
@@ -172,8 +222,49 @@ const ExpenseSplitter = () => {
     }`;
   };
 
+  const copyShareLink = () => {
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    toast({
+      title: "Link copiado!",
+      description: "Link da pescaria copiado para a área de transferência.",
+    });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const startNewTrip = () => {
+    const newTripId = generateTripId();
+    setCurrentTripId(newTripId);
+    setParticipants([]);
+    setExpenses([]);
+    setActiveTab("participants");
+    navigate(`/trip/${newTripId}`, { replace: true });
+  };
+
   return (
     <div className="w-full max-w-3xl mx-auto animate-fade-in">
+      <div className="bg-primary/10 rounded-xl p-4 mb-6 flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-medium text-primary">ID da Pescaria: {currentTripId}</h3>
+          <p className="text-xs text-muted-foreground">Compartilhe este ID para outros participantes</p>
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={copyShareLink}
+            className="flex items-center space-x-1 bg-white px-3 py-1.5 rounded-lg text-sm button-effect"
+          >
+            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+            <span>Copiar Link</span>
+          </button>
+          <button
+            onClick={startNewTrip}
+            className="bg-primary text-white px-3 py-1.5 rounded-lg text-sm button-effect"
+          >
+            Nova Pescaria
+          </button>
+        </div>
+      </div>
+
       <div className="flex justify-between mb-6">
         <button
           className={getTabButtonClass("participants")}

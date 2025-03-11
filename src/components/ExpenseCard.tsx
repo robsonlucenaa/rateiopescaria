@@ -1,6 +1,6 @@
 
 import React from "react";
-import { X, DollarSign } from "lucide-react";
+import { X, DollarSign, Check } from "lucide-react";
 import { Expense } from "./ExpenseSplitter";
 
 interface ExpenseCardProps {
