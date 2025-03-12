@@ -15,7 +15,7 @@ const Index = () => {
           Rateio de Pescaria
         </h1>
         <p className="text-muted-foreground max-w-lg mx-auto">
-          Calcule facilmente quanto cada participante deve pagar ou receber após uma pescaria em grupo.
+          Calcule facilmente quanto cada participante deve pagar ou receber após uma boa pescaria!!!
         </p>
       </div>
       
