@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { User, DollarSign, Plus, X, Share2, Copy } from "lucide-react";
+import { User, DollarSign, Plus, X, Share2, Copy, Check } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import ParticipantCard from "./ParticipantCard";
 import ExpenseCard from "./ExpenseCard";
