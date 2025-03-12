@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { User, DollarSign, Plus, X, Share2, Copy, Check } from "lucide-react";
@@ -131,10 +130,8 @@ const ExpenseSplitter = () => {
       description: `${newParticipantName} foi adicionado à pescaria.`,
     });
 
-    // If it's the first participant, go to expenses tab
-    if (participants.length === 0) {
-      setTimeout(() => setActiveTab("expenses"), 500);
-    }
+    // Removed automatic tab change to expenses when adding first participant
+    // Now user must manually click "Próximo: Despesas" to move to expenses tab
   };
 
   const removeParticipant = (id: string) => {
