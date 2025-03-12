@@ -21,7 +21,7 @@ const Index = () => {
       
       <footer className="mt-20 text-center text-sm text-muted-foreground">
         <p>
-          Desenvolvido com simplicidade e elegância para pescadores.
+          Desenvolvido por Lucena Solutions
         </p>
       </footer>
     </div>
