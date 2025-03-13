@@ -33,6 +33,7 @@ const generateTripId = () => {
 };
 
 const STORAGE_PREFIX = "fishing-trip-";
+const SYNC_INTERVAL = 5000; // 5 seconds
 
 const ExpenseSplitter = () => {
   const { toast } = useToast();
@@ -53,17 +54,44 @@ const ExpenseSplitter = () => {
   const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<number>(0);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Inicializar currentTripId baseado no tripId da URL ou gerar um novo
   useEffect(() => {
     if (tripId) {
       setCurrentTripId(tripId);
+      // Load trip data immediately when accessing via shared link
+      loadTripData(tripId);
     } else {
       const newTripId = generateTripId();
       setCurrentTripId(newTripId);
       navigate(`/trip/${newTripId}`, { replace: true });
     }
   }, [tripId, navigate]);
+
+  // Function to get all trips from storage
+  const getAllTrips = (): Record<string, FishingTripData> => {
+    try {
+      const allTrips: Record<string, FishingTripData> = {};
+      
+      // Iterate through localStorage to find all fishing trips
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(STORAGE_PREFIX)) {
+          const tripId = key.replace(STORAGE_PREFIX, "");
+          const data = localStorage.getItem(key);
+          if (data) {
+            allTrips[tripId] = JSON.parse(data);
+          }
+        }
+      }
+      
+      return allTrips;
+    } catch (error) {
+      console.error("Error getting all trips:", error);
+      return {};
+    }
+  };
 
   // Function to get data from localStorage
   const getTripData = (id: string): FishingTripData | null => {
@@ -80,6 +108,14 @@ const ExpenseSplitter = () => {
   const saveTripData = (id: string, data: FishingTripData) => {
     try {
       localStorage.setItem(`${STORAGE_PREFIX}${id}`, JSON.stringify(data));
+      
+      // Use the Storage event to notify other tabs/windows of the change
+      const event = new StorageEvent('storage', {
+        key: `${STORAGE_PREFIX}${id}`,
+        newValue: JSON.stringify(data),
+        url: window.location.href
+      });
+      window.dispatchEvent(event);
     } catch (error) {
       console.error("Error saving data to localStorage:", error);
       toast({
@@ -90,27 +126,58 @@ const ExpenseSplitter = () => {
     }
   };
 
-  // Carregar dados do localStorage baseado no tripId
-  useEffect(() => {
-    if (currentTripId) {
-      const tripData = getTripData(currentTripId);
+  // Function to load trip data
+  const loadTripData = (id: string) => {
+    const tripData = getTripData(id);
+    if (tripData) {
+      setParticipants(tripData.participants || []);
+      setExpenses(tripData.expenses || []);
+      setLastSyncTime(tripData.lastUpdated);
       
-      if (tripData) {
-        // Only update state if we have newer data or no data loaded yet
-        if (tripData.lastUpdated > lastSyncTime || participants.length === 0) {
-          setParticipants(tripData.participants || []);
-          setExpenses(tripData.expenses || []);
-          setLastSyncTime(tripData.lastUpdated);
+      if (isInitialLoad) {
+        // Set the active tab based on data available
+        if (tripData.participants.length > 0 && tripData.expenses.length > 0) {
+          setActiveTab("summary");
+        } else if (tripData.participants.length > 0) {
+          setActiveTab("expenses");
         }
+        setIsInitialLoad(false);
       }
       
-      // Gerar URL de compartilhamento
-      const baseUrl = window.location.origin;
-      setShareUrl(`${baseUrl}/trip/${currentTripId}`);
+      // Show toast on successful load
+      toast({
+        title: "Dados carregados",
+        description: `Pescaria #${id} carregada com sucesso!`,
+      });
     }
-  }, [currentTripId, lastSyncTime]);
+  };
 
-  // Poll for updates every 10 seconds
+  // Listen for storage events (when another tab updates the data)
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key && event.key === `${STORAGE_PREFIX}${currentTripId}` && event.newValue) {
+        try {
+          const newData: FishingTripData = JSON.parse(event.newValue);
+          if (newData.lastUpdated > lastSyncTime) {
+            setParticipants(newData.participants);
+            setExpenses(newData.expenses);
+            setLastSyncTime(newData.lastUpdated);
+            toast({
+              title: "Dados atualizados",
+              description: "Os dados da pescaria foram atualizados!",
+            });
+          }
+        } catch (error) {
+          console.error("Error parsing storage event data:", error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [currentTripId, lastSyncTime, toast]);
+
+  // Regular polling for updates
   useEffect(() => {
     if (!currentTripId) return;
 
@@ -121,14 +188,22 @@ const ExpenseSplitter = () => {
         setExpenses(tripData.expenses);
         setLastSyncTime(tripData.lastUpdated);
       }
-    }, 10000); // Check every 10 seconds
+    }, SYNC_INTERVAL);
 
     return () => clearInterval(pollInterval);
   }, [currentTripId, lastSyncTime]);
 
+  // Update share URL whenever currentTripId changes
+  useEffect(() => {
+    if (currentTripId) {
+      const baseUrl = window.location.origin;
+      setShareUrl(`${baseUrl}/trip/${currentTripId}`);
+    }
+  }, [currentTripId]);
+
   // Salvar dados no localStorage sempre que participants ou expenses mudarem
   useEffect(() => {
-    if (currentTripId && (participants.length > 0 || expenses.length > 0)) {
+    if (currentTripId && !isInitialLoad && (participants.length > 0 || expenses.length > 0)) {
       const dataToSave: FishingTripData = {
         participants,
         expenses,
@@ -137,8 +212,9 @@ const ExpenseSplitter = () => {
       saveTripData(currentTripId, dataToSave);
       setLastSyncTime(dataToSave.lastUpdated);
     }
-  }, [participants, expenses, currentTripId]);
+  }, [participants, expenses, currentTripId, isInitialLoad]);
 
+  // Calculate totals and update participant paid amounts
   useEffect(() => {
     // Calculate total expense
     const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
@@ -187,9 +263,6 @@ const ExpenseSplitter = () => {
       title: "Participante adicionado",
       description: `${newParticipantName} foi adicionado à pescaria.`,
     });
-
-    // Removed automatic tab change to expenses when adding first participant
-    // Now user must manually click "Próximo: Despesas" to move to expenses tab
   };
 
   const removeParticipant = (id: string) => {
@@ -293,7 +366,24 @@ const ExpenseSplitter = () => {
     setParticipants([]);
     setExpenses([]);
     setActiveTab("participants");
+    setIsInitialLoad(true);
     navigate(`/trip/${newTripId}`, { replace: true });
+    
+    toast({
+      title: "Nova pescaria criada",
+      description: `Pescaria #${newTripId} iniciada!`,
+    });
+  };
+
+  // Function to list all saved trips
+  const getAllSavedTrips = () => {
+    return Object.entries(getAllTrips()).map(([id, data]) => ({
+      id,
+      participantCount: data.participants.length,
+      expenseCount: data.expenses.length,
+      total: data.expenses.reduce((sum, expense) => sum + expense.amount, 0),
+      lastUpdated: new Date(data.lastUpdated).toLocaleDateString('pt-BR')
+    }));
   };
 
   return (
