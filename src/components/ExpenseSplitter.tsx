@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { User, DollarSign, Plus, X, Share2, Copy, Check } from "lucide-react";
@@ -45,9 +46,20 @@ const ExpenseSplitter = () => {
   const [activeTab, setActiveTab] = useState<"participants" | "expenses" | "summary">("participants");
   const [totalAmount, setTotalAmount] = useState(0);
   const [amountPerPerson, setAmountPerPerson] = useState(0);
-  const [currentTripId, setCurrentTripId] = useState<string>(tripId || generateTripId());
+  const [currentTripId, setCurrentTripId] = useState<string>("");
   const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
+
+  // Inicializar currentTripId baseado no tripId da URL ou gerar um novo
+  useEffect(() => {
+    if (tripId) {
+      setCurrentTripId(tripId);
+    } else {
+      const newTripId = generateTripId();
+      setCurrentTripId(newTripId);
+      navigate(`/trip/${newTripId}`, { replace: true });
+    }
+  }, [tripId, navigate]);
 
   // Carregar dados do localStorage baseado no tripId
   useEffect(() => {
@@ -59,16 +71,11 @@ const ExpenseSplitter = () => {
         setExpenses(parsedData.expenses || []);
       }
       
-      // Se não temos um tripId na URL mas temos um currentTripId, atualizar a URL
-      if (!tripId && currentTripId) {
-        navigate(`/trip/${currentTripId}`, { replace: true });
-      }
-      
       // Gerar URL de compartilhamento
       const baseUrl = window.location.origin;
       setShareUrl(`${baseUrl}/trip/${currentTripId}`);
     }
-  }, [currentTripId, tripId, navigate]);
+  }, [currentTripId]);
 
   // Salvar dados no localStorage sempre que participants ou expenses mudarem
   useEffect(() => {

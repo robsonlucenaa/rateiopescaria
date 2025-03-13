@@ -1,9 +1,21 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import ExpenseSplitter from "@/components/ExpenseSplitter";
 import { Fish } from "lucide-react";
+import { useParams } from "react-router-dom";
 
 const Index = () => {
+  const { tripId } = useParams();
+  
+  // Set the page title to include the trip ID if available
+  useEffect(() => {
+    if (tripId) {
+      document.title = `Pescaria #${tripId} - Rateio de Pescaria`;
+    } else {
+      document.title = "Rateio de Pescaria";
+    }
+  }, [tripId]);
+  
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/30 px-4 py-12">
       <div className="max-w-3xl mx-auto mb-10 text-center">
