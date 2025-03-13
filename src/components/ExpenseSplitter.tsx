@@ -24,12 +24,15 @@ export interface Expense {
 export interface FishingTripData {
   participants: Participant[];
   expenses: Expense[];
+  lastUpdated: number; // timestamp for tracking updates
 }
 
 // Função para gerar ID aleatório para pescaria
 const generateTripId = () => {
   return Math.random().toString(36).substring(2, 10);
 };
+
+const STORAGE_PREFIX = "fishing-trip-";
 
 const ExpenseSplitter = () => {
   const { toast } = useToast();
@@ -49,6 +52,7 @@ const ExpenseSplitter = () => {
   const [currentTripId, setCurrentTripId] = useState<string>("");
   const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<number>(0);
 
   // Inicializar currentTripId baseado no tripId da URL ou gerar um novo
   useEffect(() => {
@@ -61,30 +65,77 @@ const ExpenseSplitter = () => {
     }
   }, [tripId, navigate]);
 
+  // Function to get data from localStorage
+  const getTripData = (id: string): FishingTripData | null => {
+    try {
+      const data = localStorage.getItem(`${STORAGE_PREFIX}${id}`);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error("Error reading data from localStorage:", error);
+      return null;
+    }
+  };
+
+  // Function to save data to localStorage
+  const saveTripData = (id: string, data: FishingTripData) => {
+    try {
+      localStorage.setItem(`${STORAGE_PREFIX}${id}`, JSON.stringify(data));
+    } catch (error) {
+      console.error("Error saving data to localStorage:", error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar os dados da pescaria.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Carregar dados do localStorage baseado no tripId
   useEffect(() => {
     if (currentTripId) {
-      const savedData = localStorage.getItem(`fishing-trip-${currentTripId}`);
-      if (savedData) {
-        const parsedData: FishingTripData = JSON.parse(savedData);
-        setParticipants(parsedData.participants || []);
-        setExpenses(parsedData.expenses || []);
+      const tripData = getTripData(currentTripId);
+      
+      if (tripData) {
+        // Only update state if we have newer data or no data loaded yet
+        if (tripData.lastUpdated > lastSyncTime || participants.length === 0) {
+          setParticipants(tripData.participants || []);
+          setExpenses(tripData.expenses || []);
+          setLastSyncTime(tripData.lastUpdated);
+        }
       }
       
       // Gerar URL de compartilhamento
       const baseUrl = window.location.origin;
       setShareUrl(`${baseUrl}/trip/${currentTripId}`);
     }
-  }, [currentTripId]);
+  }, [currentTripId, lastSyncTime]);
+
+  // Poll for updates every 10 seconds
+  useEffect(() => {
+    if (!currentTripId) return;
+
+    const pollInterval = setInterval(() => {
+      const tripData = getTripData(currentTripId);
+      if (tripData && tripData.lastUpdated > lastSyncTime) {
+        setParticipants(tripData.participants);
+        setExpenses(tripData.expenses);
+        setLastSyncTime(tripData.lastUpdated);
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [currentTripId, lastSyncTime]);
 
   // Salvar dados no localStorage sempre que participants ou expenses mudarem
   useEffect(() => {
     if (currentTripId && (participants.length > 0 || expenses.length > 0)) {
       const dataToSave: FishingTripData = {
         participants,
-        expenses
+        expenses,
+        lastUpdated: Date.now()
       };
-      localStorage.setItem(`fishing-trip-${currentTripId}`, JSON.stringify(dataToSave));
+      saveTripData(currentTripId, dataToSave);
+      setLastSyncTime(dataToSave.lastUpdated);
     }
   }, [participants, expenses, currentTripId]);
 
