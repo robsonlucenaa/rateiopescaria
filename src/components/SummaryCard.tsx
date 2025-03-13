@@ -1,6 +1,6 @@
 
 import React from "react";
-import { ArrowLeft, Calculator } from "lucide-react";
+import { ArrowLeft, Calculator, ArrowRight } from "lucide-react";
 import { Participant, Expense } from "./ExpenseSplitter";
 
 interface SummaryCardProps {
@@ -34,6 +34,50 @@ const SummaryCard = ({
   const sortedParticipants = [...participantBalances].sort(
     (a, b) => a.balance - b.balance
   );
+
+  // Generate payment suggestions
+  const generatePaymentSuggestions = () => {
+    // Deep copy the participants with balances
+    const debtors = sortedParticipants
+      .filter(p => p.balance < 0)
+      .map(p => ({ ...p, remainingDebt: Math.abs(p.balance) }));
+    
+    const creditors = sortedParticipants
+      .filter(p => p.balance > 0)
+      .map(p => ({ ...p, remainingCredit: p.balance }));
+    
+    const suggestions = [];
+
+    // For each debtor, find creditors to pay
+    debtors.forEach(debtor => {
+      let remainingDebt = debtor.remainingDebt;
+      
+      // While this person still has debt and there are creditors to pay
+      creditors.forEach(creditor => {
+        if (remainingDebt > 0 && creditor.remainingCredit > 0) {
+          // Calculate payment amount (minimum of remaining debt and credit)
+          const paymentAmount = Math.min(remainingDebt, creditor.remainingCredit);
+          
+          if (paymentAmount > 0) {
+            // Add suggestion
+            suggestions.push({
+              from: debtor.name,
+              to: creditor.name,
+              amount: paymentAmount
+            });
+            
+            // Update remaining amounts
+            remainingDebt -= paymentAmount;
+            creditor.remainingCredit -= paymentAmount;
+          }
+        }
+      });
+    });
+
+    return suggestions;
+  };
+
+  const paymentSuggestions = generatePaymentSuggestions();
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -110,6 +154,36 @@ const SummaryCard = ({
           ))}
         </div>
       </div>
+
+      {/* Nova seção de sugestão de pagamentos */}
+      {paymentSuggestions.length > 0 && (
+        <div className="bg-primary/10 p-6 rounded-xl shadow-sm border border-primary/20 mt-6">
+          <h3 className="text-lg font-medium mb-4 flex items-center text-primary">
+            <ArrowRight className="w-5 h-5 mr-2 text-primary" />
+            Sugestão de pagamentos
+          </h3>
+
+          <div className="space-y-4">
+            {paymentSuggestions.map((suggestion, index) => (
+              <div
+                key={index}
+                className="p-3 rounded-lg bg-white border border-muted"
+              >
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{suggestion.from}</span>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium">{suggestion.to}</span>
+                  </div>
+                  <span className="font-semibold text-foreground">
+                    {formatCurrency(suggestion.amount)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mt-6">
         <button
