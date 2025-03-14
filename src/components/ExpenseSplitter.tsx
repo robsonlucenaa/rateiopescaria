@@ -56,6 +56,32 @@ const ExpenseSplitter = () => {
   const [lastSyncTime, setLastSyncTime] = useState<number>(Date.now());
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [lastDataUpdate, setLastDataUpdate] = useState<number>(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Function to get all trips from localStorage
+  const getAllTrips = (): Record<string, FishingTripData> => {
+    const trips: Record<string, FishingTripData> = {};
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(STORAGE_PREFIX)) {
+          const tripId = key.replace(STORAGE_PREFIX, "");
+          const data = localStorage.getItem(key);
+          if (data) {
+            try {
+              const parsedData = JSON.parse(data) as FishingTripData;
+              trips[tripId] = parsedData;
+            } catch (e) {
+              console.error(`Error parsing trip data for ${tripId}:`, e);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error getting all trips:", error);
+    }
+    return trips;
+  };
 
   // Set up the trip ID and load data
   useEffect(() => {
@@ -449,6 +475,7 @@ const ExpenseSplitter = () => {
 
   // Function to manually force refresh data from localStorage
   const forceRefresh = () => {
+    setIsRefreshing(true);
     if (currentTripId) {
       loadTripData(currentTripId);
       toast({
@@ -456,11 +483,13 @@ const ExpenseSplitter = () => {
         description: "Dados da pescaria sincronizados com sucesso!",
       });
     }
+    setTimeout(() => setIsRefreshing(false), 1000);
   };
 
   // Function to list all saved trips
   const getAllSavedTrips = () => {
-    return Object.entries(getAllTrips()).map(([id, data]) => ({
+    const trips = getAllTrips();
+    return Object.entries(trips).map(([id, data]) => ({
       id,
       participantCount: data.participants.length,
       expenseCount: data.expenses.length,
@@ -479,11 +508,12 @@ const ExpenseSplitter = () => {
         <div className="flex space-x-2">
           <button
             onClick={forceRefresh}
-            className="flex items-center space-x-1 bg-secondary px-3 py-1.5 rounded-lg text-sm button-effect"
+            className={`flex items-center space-x-1 ${isRefreshing ? 'bg-primary/20' : 'bg-secondary'} px-3 py-1.5 rounded-lg text-sm button-effect`}
             title="Atualizar dados"
+            disabled={isRefreshing}
           >
-            <Share2 className="w-4 h-4" />
-            <span>Atualizar</span>
+            <Share2 className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Atualizando...' : 'Atualizar'}</span>
           </button>
           <button
             onClick={copyShareLink}
