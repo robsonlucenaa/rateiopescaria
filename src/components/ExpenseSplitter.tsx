@@ -27,13 +27,19 @@ export interface FishingTripData {
   lastUpdated: number; // timestamp for tracking updates
 }
 
-// Função para gerar ID aleatório para pescaria
+// Função para gerar ID aleatório para pescaria (apenas 4 caracteres alfanuméricos)
 const generateTripId = () => {
-  return Math.random().toString(36).substring(2, 10);
+  // Gera um ID de 4 caracteres alfanuméricos
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 4; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 };
 
 const STORAGE_PREFIX = "fishing-trip-";
-const SYNC_INTERVAL = 10000; // Check every 10 seconds
+const SYNC_INTERVAL = 10000; // Verificar a cada 10 segundos
 
 const ExpenseSplitter = () => {
   const { toast } = useToast();
@@ -59,17 +65,17 @@ const ExpenseSplitter = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Set up the trip ID and load data
+  // Configurar o ID da viagem e carregar dados
   useEffect(() => {
     if (tripId) {
       setCurrentTripId(tripId);
       loadTripData(tripId);
-      console.log(`Loading trip data for ID: ${tripId}`);
+      console.log(`Carregando dados da pescaria ID: ${tripId}`);
     } else {
       const newTripId = generateTripId();
       setCurrentTripId(newTripId);
       navigate(`/trip/${newTripId}`, { replace: true });
-      console.log(`Created new trip with ID: ${newTripId}`);
+      console.log(`Nova pescaria criada com ID: ${newTripId}`);
     }
   }, [tripId, navigate]);
 

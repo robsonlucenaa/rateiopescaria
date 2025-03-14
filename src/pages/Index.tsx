@@ -1,13 +1,14 @@
 
 import React, { useEffect } from "react";
 import ExpenseSplitter from "@/components/ExpenseSplitter";
-import { Fish, RefreshCw, Share2, CloudSun } from "lucide-react";
+import TripFinder from "@/components/TripFinder";
+import { Fish, RefreshCw, CloudSun } from "lucide-react";
 import { useParams } from "react-router-dom";
 
 const Index = () => {
   const { tripId } = useParams();
   
-  // Set the page title to include the trip ID if available
+  // Define o título da página para incluir o ID da viagem se disponível
   useEffect(() => {
     if (tripId) {
       document.title = `Pescaria #${tripId} - Rateio de Pescaria`;
@@ -26,15 +27,19 @@ const Index = () => {
           <Fish className="h-7 w-7 text-primary" />
           Rateio de Pescaria
         </h1>
-        <p className="text-muted-foreground max-w-lg mx-auto">
+        <p className="text-muted-foreground max-w-lg mx-auto mb-6">
           Calcule facilmente quanto cada participante deve pagar ou receber após uma boa pescaria!!!
         </p>
+        
+        <div className="flex justify-center">
+          <TripFinder />
+        </div>
         
         {tripId && (
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-center justify-center gap-2 max-w-md mx-auto">
             <CloudSun className="h-4 w-4" />
             <span>
-              Os dados da pescaria são sincronizados automaticamente. Clique no botão "Atualizar" para sincronizar manualmente.
+              Os dados da pescaria são armazenados automaticamente. Clique no botão "Atualizar" para sincronizar manualmente.
             </span>
           </div>
         )}
