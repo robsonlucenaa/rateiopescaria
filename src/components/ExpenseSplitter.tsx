@@ -1,11 +1,11 @@
-
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { User, DollarSign, Plus, X, Share2, Copy, Check } from "lucide-react";
+import { User, DollarSign, Plus, X, Share2, Copy, Check, RefreshCw } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import ParticipantCard from "./ParticipantCard";
 import ExpenseCard from "./ExpenseCard";
 import SummaryCard from "./SummaryCard";
+import { apiService } from "@/services/apiService";
 
 export interface Participant {
   id: string;
@@ -33,7 +33,7 @@ const generateTripId = () => {
 };
 
 const STORAGE_PREFIX = "fishing-trip-";
-const SYNC_INTERVAL = 2000; // Check every 2 seconds
+const SYNC_INTERVAL = 10000; // Check every 10 seconds
 
 const ExpenseSplitter = () => {
   const { toast } = useToast();
@@ -57,31 +57,7 @@ const ExpenseSplitter = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [lastDataUpdate, setLastDataUpdate] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // Function to get all trips from localStorage
-  const getAllTrips = (): Record<string, FishingTripData> => {
-    const trips: Record<string, FishingTripData> = {};
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(STORAGE_PREFIX)) {
-          const tripId = key.replace(STORAGE_PREFIX, "");
-          const data = localStorage.getItem(key);
-          if (data) {
-            try {
-              const parsedData = JSON.parse(data) as FishingTripData;
-              trips[tripId] = parsedData;
-            } catch (e) {
-              console.error(`Error parsing trip data for ${tripId}:`, e);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error getting all trips:", error);
-    }
-    return trips;
-  };
+  const [isSaving, setIsSaving] = useState(false);
 
   // Set up the trip ID and load data
   useEffect(() => {
@@ -97,172 +73,75 @@ const ExpenseSplitter = () => {
     }
   }, [tripId, navigate]);
 
-  // Function to get trip data from localStorage
-  const getTripData = (id: string): FishingTripData | null => {
+  // Function to load trip data from backend
+  const loadTripData = async (id: string) => {
+    console.log(`Attempting to load trip data for ID: ${id}`);
     try {
-      const data = localStorage.getItem(`${STORAGE_PREFIX}${id}`);
-      if (data) {
-        const parsedData = JSON.parse(data);
-        console.log(`Retrieved data for trip ${id}:`, parsedData);
-        return parsedData;
+      const tripData = await apiService.fetchTrip(id);
+      
+      if (tripData) {
+        setParticipants(tripData.participants || []);
+        setExpenses(tripData.expenses || []);
+        setLastSyncTime(tripData.lastUpdated || Date.now());
+        setLastDataUpdate(tripData.lastUpdated || Date.now());
+        
+        if (isInitialLoad) {
+          // Set the active tab based on data available
+          if (tripData.participants.length > 0 && tripData.expenses.length > 0) {
+            setActiveTab("summary");
+          } else if (tripData.participants.length > 0) {
+            setActiveTab("expenses");
+          }
+          setIsInitialLoad(false);
+        }
+        
+        toast({
+          title: "Dados carregados",
+          description: `Pescaria #${id} carregada com sucesso!`,
+        });
+        
+        console.log(`Loaded trip data for ID: ${id}`, tripData);
+      } else {
+        console.log(`No data found for trip ID: ${id}, creating new trip`);
+        // If no data exists yet, create an empty trip
+        const newTripData: FishingTripData = { 
+          participants: [], 
+          expenses: [], 
+          lastUpdated: Date.now() 
+        };
+        await apiService.saveTrip(id, newTripData);
       }
-      console.log(`No data found for trip ${id}`);
-      return null;
     } catch (error) {
-      console.error(`Error reading data for trip ${id}:`, error);
+      console.error("Error loading trip data:", error);
       toast({
         title: "Erro ao carregar dados",
         description: "Não foi possível carregar os dados da pescaria.",
         variant: "destructive",
       });
-      return null;
     }
   };
 
-  // Function to save data to localStorage and notify other windows
-  const saveTripData = (id: string, data: FishingTripData) => {
-    try {
-      // Add a timestamp to track updates
-      data.lastUpdated = Date.now();
-      
-      // Save to localStorage
-      localStorage.setItem(`${STORAGE_PREFIX}${id}`, JSON.stringify(data));
-      console.log(`Saved data for trip ${id}:`, data);
-      
-      // Update lastDataUpdate time
-      setLastDataUpdate(data.lastUpdated);
-      
-      // Create a custom event to notify other tabs/windows
-      const event = new CustomEvent('fishing-trip-updated', { 
-        detail: { tripId: id, timestamp: data.lastUpdated }
-      });
-      window.dispatchEvent(event);
-      
-      // Also dispatch a storage event to help with cross-tab communication
-      // This is a hack because StorageEvent can't be manually created in all browsers
-      localStorage.setItem('last-update', `${id}-${data.lastUpdated}`);
-      localStorage.removeItem('last-update');
-    } catch (error) {
-      console.error(`Error saving data for trip ${id}:`, error);
-      toast({
-        title: "Erro ao salvar",
-        description: "Não foi possível salvar os dados da pescaria.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Function to load trip data
-  const loadTripData = (id: string) => {
-    console.log(`Attempting to load trip data for ID: ${id}`);
-    const tripData = getTripData(id);
-    if (tripData) {
-      setParticipants(tripData.participants || []);
-      setExpenses(tripData.expenses || []);
-      setLastSyncTime(tripData.lastUpdated || Date.now());
-      setLastDataUpdate(tripData.lastUpdated || Date.now());
-      
-      if (isInitialLoad) {
-        // Set the active tab based on data available
-        if (tripData.participants.length > 0 && tripData.expenses.length > 0) {
-          setActiveTab("summary");
-        } else if (tripData.participants.length > 0) {
-          setActiveTab("expenses");
-        }
-        setIsInitialLoad(false);
-      }
-      
-      toast({
-        title: "Dados carregados",
-        description: `Pescaria #${id} carregada com sucesso!`,
-      });
-      
-      console.log(`Loaded trip data for ID: ${id}`, tripData);
-    } else {
-      console.log(`No data found for trip ID: ${id}, creating new trip`);
-      // If no data exists yet, create an empty trip
-      saveTripData(id, { participants: [], expenses: [], lastUpdated: Date.now() });
-    }
-  };
-
-  // Listen for custom events from other windows/tabs
-  useEffect(() => {
-    const handleCustomEvent = (event: CustomEvent<{ tripId: string, timestamp: number }>) => {
-      const { tripId: updatedTripId, timestamp } = event.detail;
-      console.log(`Received custom event for trip ${updatedTripId}, timestamp: ${timestamp}`);
-      
-      if (updatedTripId === currentTripId && timestamp > lastSyncTime) {
-        console.log(`Loading updated data from custom event`);
-        loadTripData(currentTripId);
-      }
-    };
-
-    // Add event listener for custom event
-    window.addEventListener('fishing-trip-updated', handleCustomEvent as EventListener);
-    
-    // Listen for storage events (when localStorage changes in another tab/window)
-    const handleStorageChange = (event: StorageEvent) => {
-      console.log('Storage event:', event);
-      
-      // Check if it's our storage prefix or the last-update hack
-      if (event.key && (
-          event.key.startsWith(STORAGE_PREFIX) || 
-          event.key === 'last-update'
-      )) {
-        // If it's the last-update hack, extract the tripId
-        if (event.key === 'last-update' && event.newValue) {
-          const [updatedTripId, timestamp] = event.newValue.split('-');
-          if (updatedTripId === currentTripId) {
-            console.log(`Loading updated data from storage event (last-update)`);
-            loadTripData(currentTripId);
-          }
-        }
-        // If it's our specific trip
-        else if (event.key === `${STORAGE_PREFIX}${currentTripId}` && event.newValue) {
-          try {
-            const newData = JSON.parse(event.newValue);
-            if (newData.lastUpdated > lastSyncTime) {
-              console.log(`Loading updated data from storage event`);
-              setParticipants(newData.participants);
-              setExpenses(newData.expenses);
-              setLastSyncTime(newData.lastUpdated);
-              
-              toast({
-                title: "Dados atualizados",
-                description: "Os dados da pescaria foram atualizados!",
-              });
-            }
-          } catch (error) {
-            console.error("Error parsing storage event data:", error);
-          }
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('fishing-trip-updated', handleCustomEvent as EventListener);
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [currentTripId, lastSyncTime, toast]);
-
-  // Poll for updates regularly
+  // Poll for updates regularly from the backend
   useEffect(() => {
     if (!currentTripId) return;
 
-    const checkForUpdates = () => {
-      const tripData = getTripData(currentTripId);
-      if (tripData && tripData.lastUpdated > lastSyncTime) {
-        console.log(`Found newer data when polling: `, tripData);
-        setParticipants(tripData.participants);
-        setExpenses(tripData.expenses);
-        setLastSyncTime(tripData.lastUpdated);
+    const checkForUpdates = async () => {
+      try {
+        const { hasUpdates, data } = await apiService.checkForUpdates(currentTripId, lastSyncTime);
         
-        toast({
-          title: "Dados atualizados",
-          description: "Novos dados da pescaria foram encontrados!",
-        });
+        if (hasUpdates && data) {
+          console.log(`Found newer data when polling: `, data);
+          setParticipants(data.participants);
+          setExpenses(data.expenses);
+          setLastSyncTime(data.lastUpdated);
+          
+          toast({
+            title: "Dados atualizados",
+            description: "Novos dados da pescaria foram encontrados!",
+          });
+        }
+      } catch (error) {
+        console.error("Error checking for updates:", error);
       }
     };
 
@@ -278,21 +157,40 @@ const ExpenseSplitter = () => {
     }
   }, [currentTripId]);
 
-  // Save data to localStorage whenever participants or expenses change
+  // Save data to backend whenever participants or expenses change
   useEffect(() => {
-    if (currentTripId && !isInitialLoad && (participants.length > 0 || expenses.length > 0)) {
-      // Only save if we've made a change (not just loaded data)
-      if (Date.now() - lastDataUpdate > 1000) {
-        console.log(`Saving updated trip data, participants: ${participants.length}, expenses: ${expenses.length}`);
-        const dataToSave: FishingTripData = {
-          participants,
-          expenses,
-          lastUpdated: Date.now()
-        };
-        saveTripData(currentTripId, dataToSave);
+    const saveData = async () => {
+      if (currentTripId && !isInitialLoad && (participants.length > 0 || expenses.length > 0)) {
+        // Only save if we've made a change (not just loaded data)
+        if (Date.now() - lastDataUpdate > 1000 && !isSaving) {
+          setIsSaving(true);
+          console.log(`Saving updated trip data, participants: ${participants.length}, expenses: ${expenses.length}`);
+          
+          const dataToSave: FishingTripData = {
+            participants,
+            expenses,
+            lastUpdated: Date.now()
+          };
+          
+          try {
+            await apiService.saveTrip(currentTripId, dataToSave);
+            setLastDataUpdate(dataToSave.lastUpdated);
+          } catch (error) {
+            console.error("Error saving trip data:", error);
+            toast({
+              title: "Erro ao salvar",
+              description: "Não foi possível salvar os dados da pescaria.",
+              variant: "destructive",
+            });
+          } finally {
+            setIsSaving(false);
+          }
+        }
       }
-    }
-  }, [participants, expenses, currentTripId, isInitialLoad, lastDataUpdate]);
+    };
+    
+    saveData();
+  }, [participants, expenses, currentTripId, isInitialLoad, lastDataUpdate, toast, isSaving]);
 
   // Calculate totals and update participant paid amounts
   useEffect(() => {
@@ -352,7 +250,7 @@ const ExpenseSplitter = () => {
     setParticipants(participants.filter((p) => p.id !== id));
   };
 
-  const addExpense = () => {
+  const addExpense = async () => {
     if (!newExpenseDescription.trim()) {
       toast({
         title: "Descrição necessária",
@@ -411,26 +309,54 @@ const ExpenseSplitter = () => {
       description: `${newExpenseDescription}: R$ ${amount.toFixed(2)} (Pago por ${payer.name})`,
     });
     
-    // Force immediate save to localStorage
+    // Force immediate save to backend
+    setIsSaving(true);
     const dataToSave: FishingTripData = {
       participants,
       expenses: updatedExpenses,
       lastUpdated: Date.now()
     };
-    saveTripData(currentTripId, dataToSave);
+    
+    try {
+      await apiService.saveTrip(currentTripId, dataToSave);
+      setLastDataUpdate(dataToSave.lastUpdated);
+    } catch (error) {
+      console.error("Error saving expense:", error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar a despesa.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const removeExpense = (id: string) => {
+  const removeExpense = async (id: string) => {
     const updatedExpenses = expenses.filter((e) => e.id !== id);
     setExpenses(updatedExpenses);
     
-    // Force immediate save to localStorage
+    // Force immediate save to backend
+    setIsSaving(true);
     const dataToSave: FishingTripData = {
       participants,
       expenses: updatedExpenses,
       lastUpdated: Date.now()
     };
-    saveTripData(currentTripId, dataToSave);
+    
+    try {
+      await apiService.saveTrip(currentTripId, dataToSave);
+      setLastDataUpdate(dataToSave.lastUpdated);
+    } catch (error) {
+      console.error("Error removing expense:", error);
+      toast({
+        title: "Erro ao remover",
+        description: "Não foi possível remover a despesa.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -473,29 +399,27 @@ const ExpenseSplitter = () => {
     });
   };
 
-  // Function to manually force refresh data from localStorage
-  const forceRefresh = () => {
+  // Function to manually force refresh data from backend
+  const forceRefresh = async () => {
     setIsRefreshing(true);
     if (currentTripId) {
-      loadTripData(currentTripId);
-      toast({
-        title: "Dados atualizados",
-        description: "Dados da pescaria sincronizados com sucesso!",
-      });
+      try {
+        await loadTripData(currentTripId);
+        toast({
+          title: "Dados atualizados",
+          description: "Dados da pescaria sincronizados com sucesso!",
+        });
+      } catch (error) {
+        console.error("Error refreshing data:", error);
+        toast({
+          title: "Erro ao atualizar",
+          description: "Não foi possível atualizar os dados.",
+          variant: "destructive",
+        });
+      } finally {
+        setTimeout(() => setIsRefreshing(false), 1000);
+      }
     }
-    setTimeout(() => setIsRefreshing(false), 1000);
-  };
-
-  // Function to list all saved trips
-  const getAllSavedTrips = () => {
-    const trips = getAllTrips();
-    return Object.entries(trips).map(([id, data]) => ({
-      id,
-      participantCount: data.participants.length,
-      expenseCount: data.expenses.length,
-      total: data.expenses.reduce((sum, expense) => sum + expense.amount, 0),
-      lastUpdated: new Date(data.lastUpdated).toLocaleDateString('pt-BR')
-    }));
   };
 
   return (
@@ -510,9 +434,9 @@ const ExpenseSplitter = () => {
             onClick={forceRefresh}
             className={`flex items-center space-x-1 ${isRefreshing ? 'bg-primary/20' : 'bg-secondary'} px-3 py-1.5 rounded-lg text-sm button-effect`}
             title="Atualizar dados"
-            disabled={isRefreshing}
+            disabled={isRefreshing || isSaving}
           >
-            <Share2 className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             <span>{isRefreshing ? 'Atualizando...' : 'Atualizar'}</span>
           </button>
           <button
