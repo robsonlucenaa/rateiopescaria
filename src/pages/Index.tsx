@@ -1,7 +1,7 @@
 
 import React, { useEffect } from "react";
 import ExpenseSplitter from "@/components/ExpenseSplitter";
-import { Fish, RefreshCw, Share2, CloudSync } from "lucide-react";
+import { Fish, RefreshCw, Share2, CloudSun } from "lucide-react";
 import { useParams } from "react-router-dom";
 
 const Index = () => {
@@ -32,7 +32,7 @@ const Index = () => {
         
         {tripId && (
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-center justify-center gap-2 max-w-md mx-auto">
-            <CloudSync className="h-4 w-4" />
+            <CloudSun className="h-4 w-4" />
             <span>
               Os dados da pescaria são sincronizados automaticamente. Clique no botão "Atualizar" para sincronizar manualmente.
             </span>
