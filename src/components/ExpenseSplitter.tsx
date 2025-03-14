@@ -33,7 +33,7 @@ const generateTripId = () => {
 };
 
 const STORAGE_PREFIX = "fishing-trip-";
-const SYNC_INTERVAL = 5000; // 5 seconds
+const SYNC_INTERVAL = 2000; // Check every 2 seconds
 
 const ExpenseSplitter = () => {
   const { toast } = useToast();
@@ -53,71 +53,71 @@ const ExpenseSplitter = () => {
   const [currentTripId, setCurrentTripId] = useState<string>("");
   const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<number>(0);
+  const [lastSyncTime, setLastSyncTime] = useState<number>(Date.now());
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [lastDataUpdate, setLastDataUpdate] = useState<number>(0);
 
-  // Inicializar currentTripId baseado no tripId da URL ou gerar um novo
+  // Set up the trip ID and load data
   useEffect(() => {
     if (tripId) {
       setCurrentTripId(tripId);
-      // Load trip data immediately when accessing via shared link
       loadTripData(tripId);
+      console.log(`Loading trip data for ID: ${tripId}`);
     } else {
       const newTripId = generateTripId();
       setCurrentTripId(newTripId);
       navigate(`/trip/${newTripId}`, { replace: true });
+      console.log(`Created new trip with ID: ${newTripId}`);
     }
   }, [tripId, navigate]);
 
-  // Function to get all trips from storage
-  const getAllTrips = (): Record<string, FishingTripData> => {
-    try {
-      const allTrips: Record<string, FishingTripData> = {};
-      
-      // Iterate through localStorage to find all fishing trips
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(STORAGE_PREFIX)) {
-          const tripId = key.replace(STORAGE_PREFIX, "");
-          const data = localStorage.getItem(key);
-          if (data) {
-            allTrips[tripId] = JSON.parse(data);
-          }
-        }
-      }
-      
-      return allTrips;
-    } catch (error) {
-      console.error("Error getting all trips:", error);
-      return {};
-    }
-  };
-
-  // Function to get data from localStorage
+  // Function to get trip data from localStorage
   const getTripData = (id: string): FishingTripData | null => {
     try {
       const data = localStorage.getItem(`${STORAGE_PREFIX}${id}`);
-      return data ? JSON.parse(data) : null;
+      if (data) {
+        const parsedData = JSON.parse(data);
+        console.log(`Retrieved data for trip ${id}:`, parsedData);
+        return parsedData;
+      }
+      console.log(`No data found for trip ${id}`);
+      return null;
     } catch (error) {
-      console.error("Error reading data from localStorage:", error);
+      console.error(`Error reading data for trip ${id}:`, error);
+      toast({
+        title: "Erro ao carregar dados",
+        description: "Não foi possível carregar os dados da pescaria.",
+        variant: "destructive",
+      });
       return null;
     }
   };
 
-  // Function to save data to localStorage
+  // Function to save data to localStorage and notify other windows
   const saveTripData = (id: string, data: FishingTripData) => {
     try {
-      localStorage.setItem(`${STORAGE_PREFIX}${id}`, JSON.stringify(data));
+      // Add a timestamp to track updates
+      data.lastUpdated = Date.now();
       
-      // Use the Storage event to notify other tabs/windows of the change
-      const event = new StorageEvent('storage', {
-        key: `${STORAGE_PREFIX}${id}`,
-        newValue: JSON.stringify(data),
-        url: window.location.href
+      // Save to localStorage
+      localStorage.setItem(`${STORAGE_PREFIX}${id}`, JSON.stringify(data));
+      console.log(`Saved data for trip ${id}:`, data);
+      
+      // Update lastDataUpdate time
+      setLastDataUpdate(data.lastUpdated);
+      
+      // Create a custom event to notify other tabs/windows
+      const event = new CustomEvent('fishing-trip-updated', { 
+        detail: { tripId: id, timestamp: data.lastUpdated }
       });
       window.dispatchEvent(event);
+      
+      // Also dispatch a storage event to help with cross-tab communication
+      // This is a hack because StorageEvent can't be manually created in all browsers
+      localStorage.setItem('last-update', `${id}-${data.lastUpdated}`);
+      localStorage.removeItem('last-update');
     } catch (error) {
-      console.error("Error saving data to localStorage:", error);
+      console.error(`Error saving data for trip ${id}:`, error);
       toast({
         title: "Erro ao salvar",
         description: "Não foi possível salvar os dados da pescaria.",
@@ -128,11 +128,13 @@ const ExpenseSplitter = () => {
 
   // Function to load trip data
   const loadTripData = (id: string) => {
+    console.log(`Attempting to load trip data for ID: ${id}`);
     const tripData = getTripData(id);
     if (tripData) {
       setParticipants(tripData.participants || []);
       setExpenses(tripData.expenses || []);
-      setLastSyncTime(tripData.lastUpdated);
+      setLastSyncTime(tripData.lastUpdated || Date.now());
+      setLastDataUpdate(tripData.lastUpdated || Date.now());
       
       if (isInitialLoad) {
         // Set the active tab based on data available
@@ -144,54 +146,103 @@ const ExpenseSplitter = () => {
         setIsInitialLoad(false);
       }
       
-      // Show toast on successful load
       toast({
         title: "Dados carregados",
         description: `Pescaria #${id} carregada com sucesso!`,
       });
+      
+      console.log(`Loaded trip data for ID: ${id}`, tripData);
+    } else {
+      console.log(`No data found for trip ID: ${id}, creating new trip`);
+      // If no data exists yet, create an empty trip
+      saveTripData(id, { participants: [], expenses: [], lastUpdated: Date.now() });
     }
   };
 
-  // Listen for storage events (when another tab updates the data)
+  // Listen for custom events from other windows/tabs
   useEffect(() => {
+    const handleCustomEvent = (event: CustomEvent<{ tripId: string, timestamp: number }>) => {
+      const { tripId: updatedTripId, timestamp } = event.detail;
+      console.log(`Received custom event for trip ${updatedTripId}, timestamp: ${timestamp}`);
+      
+      if (updatedTripId === currentTripId && timestamp > lastSyncTime) {
+        console.log(`Loading updated data from custom event`);
+        loadTripData(currentTripId);
+      }
+    };
+
+    // Add event listener for custom event
+    window.addEventListener('fishing-trip-updated', handleCustomEvent as EventListener);
+    
+    // Listen for storage events (when localStorage changes in another tab/window)
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key && event.key === `${STORAGE_PREFIX}${currentTripId}` && event.newValue) {
-        try {
-          const newData: FishingTripData = JSON.parse(event.newValue);
-          if (newData.lastUpdated > lastSyncTime) {
-            setParticipants(newData.participants);
-            setExpenses(newData.expenses);
-            setLastSyncTime(newData.lastUpdated);
-            toast({
-              title: "Dados atualizados",
-              description: "Os dados da pescaria foram atualizados!",
-            });
+      console.log('Storage event:', event);
+      
+      // Check if it's our storage prefix or the last-update hack
+      if (event.key && (
+          event.key.startsWith(STORAGE_PREFIX) || 
+          event.key === 'last-update'
+      )) {
+        // If it's the last-update hack, extract the tripId
+        if (event.key === 'last-update' && event.newValue) {
+          const [updatedTripId, timestamp] = event.newValue.split('-');
+          if (updatedTripId === currentTripId) {
+            console.log(`Loading updated data from storage event (last-update)`);
+            loadTripData(currentTripId);
           }
-        } catch (error) {
-          console.error("Error parsing storage event data:", error);
+        }
+        // If it's our specific trip
+        else if (event.key === `${STORAGE_PREFIX}${currentTripId}` && event.newValue) {
+          try {
+            const newData = JSON.parse(event.newValue);
+            if (newData.lastUpdated > lastSyncTime) {
+              console.log(`Loading updated data from storage event`);
+              setParticipants(newData.participants);
+              setExpenses(newData.expenses);
+              setLastSyncTime(newData.lastUpdated);
+              
+              toast({
+                title: "Dados atualizados",
+                description: "Os dados da pescaria foram atualizados!",
+              });
+            }
+          } catch (error) {
+            console.error("Error parsing storage event data:", error);
+          }
         }
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('fishing-trip-updated', handleCustomEvent as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [currentTripId, lastSyncTime, toast]);
 
-  // Regular polling for updates
+  // Poll for updates regularly
   useEffect(() => {
     if (!currentTripId) return;
 
-    const pollInterval = setInterval(() => {
+    const checkForUpdates = () => {
       const tripData = getTripData(currentTripId);
       if (tripData && tripData.lastUpdated > lastSyncTime) {
+        console.log(`Found newer data when polling: `, tripData);
         setParticipants(tripData.participants);
         setExpenses(tripData.expenses);
         setLastSyncTime(tripData.lastUpdated);
+        
+        toast({
+          title: "Dados atualizados",
+          description: "Novos dados da pescaria foram encontrados!",
+        });
       }
-    }, SYNC_INTERVAL);
+    };
 
+    const pollInterval = setInterval(checkForUpdates, SYNC_INTERVAL);
     return () => clearInterval(pollInterval);
-  }, [currentTripId, lastSyncTime]);
+  }, [currentTripId, lastSyncTime, toast]);
 
   // Update share URL whenever currentTripId changes
   useEffect(() => {
@@ -201,18 +252,21 @@ const ExpenseSplitter = () => {
     }
   }, [currentTripId]);
 
-  // Salvar dados no localStorage sempre que participants ou expenses mudarem
+  // Save data to localStorage whenever participants or expenses change
   useEffect(() => {
     if (currentTripId && !isInitialLoad && (participants.length > 0 || expenses.length > 0)) {
-      const dataToSave: FishingTripData = {
-        participants,
-        expenses,
-        lastUpdated: Date.now()
-      };
-      saveTripData(currentTripId, dataToSave);
-      setLastSyncTime(dataToSave.lastUpdated);
+      // Only save if we've made a change (not just loaded data)
+      if (Date.now() - lastDataUpdate > 1000) {
+        console.log(`Saving updated trip data, participants: ${participants.length}, expenses: ${expenses.length}`);
+        const dataToSave: FishingTripData = {
+          participants,
+          expenses,
+          lastUpdated: Date.now()
+        };
+        saveTripData(currentTripId, dataToSave);
+      }
     }
-  }, [participants, expenses, currentTripId, isInitialLoad]);
+  }, [participants, expenses, currentTripId, isInitialLoad, lastDataUpdate]);
 
   // Calculate totals and update participant paid amounts
   useEffect(() => {
@@ -319,7 +373,8 @@ const ExpenseSplitter = () => {
       paidByName: payer.name
     };
 
-    setExpenses([...expenses, newExpense]);
+    const updatedExpenses = [...expenses, newExpense];
+    setExpenses(updatedExpenses);
 
     setNewExpenseDescription("");
     setNewExpenseAmount("");
@@ -329,10 +384,27 @@ const ExpenseSplitter = () => {
       title: "Despesa adicionada",
       description: `${newExpenseDescription}: R$ ${amount.toFixed(2)} (Pago por ${payer.name})`,
     });
+    
+    // Force immediate save to localStorage
+    const dataToSave: FishingTripData = {
+      participants,
+      expenses: updatedExpenses,
+      lastUpdated: Date.now()
+    };
+    saveTripData(currentTripId, dataToSave);
   };
 
   const removeExpense = (id: string) => {
-    setExpenses(expenses.filter((e) => e.id !== id));
+    const updatedExpenses = expenses.filter((e) => e.id !== id);
+    setExpenses(updatedExpenses);
+    
+    // Force immediate save to localStorage
+    const dataToSave: FishingTripData = {
+      participants,
+      expenses: updatedExpenses,
+      lastUpdated: Date.now()
+    };
+    saveTripData(currentTripId, dataToSave);
   };
 
   const formatCurrency = (value: number) => {
@@ -375,6 +447,17 @@ const ExpenseSplitter = () => {
     });
   };
 
+  // Function to manually force refresh data from localStorage
+  const forceRefresh = () => {
+    if (currentTripId) {
+      loadTripData(currentTripId);
+      toast({
+        title: "Dados atualizados",
+        description: "Dados da pescaria sincronizados com sucesso!",
+      });
+    }
+  };
+
   // Function to list all saved trips
   const getAllSavedTrips = () => {
     return Object.entries(getAllTrips()).map(([id, data]) => ({
@@ -388,12 +471,20 @@ const ExpenseSplitter = () => {
 
   return (
     <div className="w-full max-w-3xl mx-auto animate-fade-in">
-      <div className="bg-primary/10 rounded-xl p-4 mb-6 flex items-center justify-between">
+      <div className="bg-primary/10 rounded-xl p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h3 className="text-sm font-medium text-primary">ID da Pescaria: {currentTripId}</h3>
           <p className="text-xs text-muted-foreground">Compartilhe este ID para outros participantes</p>
         </div>
         <div className="flex space-x-2">
+          <button
+            onClick={forceRefresh}
+            className="flex items-center space-x-1 bg-secondary px-3 py-1.5 rounded-lg text-sm button-effect"
+            title="Atualizar dados"
+          >
+            <Share2 className="w-4 h-4" />
+            <span>Atualizar</span>
+          </button>
           <button
             onClick={copyShareLink}
             className="flex items-center space-x-1 bg-white px-3 py-1.5 rounded-lg text-sm button-effect"
