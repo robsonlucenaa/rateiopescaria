@@ -31,9 +31,7 @@ const Index = () => {
           Calcule facilmente quanto cada participante deve pagar ou receber após uma boa pescaria!!!
         </p>
         
-        <div className="flex justify-center">
-          <TripFinder />
-        </div>
+        {/* Removemos o TripFinder daqui, pois vamos adicioná-lo junto ao ExpenseSplitter */}
         
         {tripId && (
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-center justify-center gap-2 max-w-md mx-auto">

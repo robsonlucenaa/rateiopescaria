@@ -4,6 +4,9 @@
 
 import { FishingTripData } from "@/components/ExpenseSplitter";
 
+// Prefixo usado para todas as chaves de pescaria no localStorage
+const STORAGE_PREFIX = "fishing-trip-";
+
 // Simulando uma API de backend com localStorage
 // Em uma implementação real, isso usaria chamadas fetch para um servidor
 export const apiService = {
@@ -14,15 +17,23 @@ export const apiService = {
       // Percorre todos os itens no localStorage
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith("fishing-trip-")) {
-          const tripId = key.replace("fishing-trip-", "");
-          const data = JSON.parse(localStorage.getItem(key) || "{}") as FishingTripData;
+        if (key && key.startsWith(STORAGE_PREFIX)) {
+          const tripId = key.replace(STORAGE_PREFIX, "");
+          const rawData = localStorage.getItem(key);
           
-          trips.push({
-            id: tripId,
-            lastUpdated: data.lastUpdated || 0,
-            participants: data.participants?.length || 0
-          });
+          if (rawData) {
+            try {
+              const data = JSON.parse(rawData) as FishingTripData;
+              
+              trips.push({
+                id: tripId,
+                lastUpdated: data.lastUpdated || 0,
+                participants: data.participants?.length || 0
+              });
+            } catch (e) {
+              console.error(`Erro ao processar dados da pescaria ${tripId}:`, e);
+            }
+          }
         }
       }
       
@@ -37,9 +48,16 @@ export const apiService = {
   // Buscar uma pescaria por ID
   fetchTrip: async (tripId: string): Promise<FishingTripData | null> => {
     try {
-      const tripData = localStorage.getItem(`fishing-trip-${tripId}`);
+      const storageKey = `${STORAGE_PREFIX}${tripId}`;
+      const tripData = localStorage.getItem(storageKey);
+      
       if (tripData) {
-        return JSON.parse(tripData) as FishingTripData;
+        try {
+          return JSON.parse(tripData) as FishingTripData;
+        } catch (e) {
+          console.error(`Erro ao analisar JSON para pescaria ${tripId}:`, e);
+          return null;
+        }
       }
       return null;
     } catch (error) {
@@ -53,7 +71,11 @@ export const apiService = {
     try {
       // Adiciona timestamp atual
       data.lastUpdated = Date.now();
-      localStorage.setItem(`fishing-trip-${tripId}`, JSON.stringify(data));
+      const storageKey = `${STORAGE_PREFIX}${tripId}`;
+      
+      // Garante que os dados estejam corretamente formatados antes de salvar
+      const dataToSave = JSON.stringify(data);
+      localStorage.setItem(storageKey, dataToSave);
       
       // Em um backend real, isso seria uma chamada de API
       console.log(`Pescaria ${tripId} salva no "banco de dados"`);

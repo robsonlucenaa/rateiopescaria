@@ -24,6 +24,7 @@ const TripFinder = () => {
 
   const openDialog = async () => {
     setIsOpen(true);
+    setTripId(""); // Limpa o campo de ID ao abrir o diálogo
     // Carrega as pescarias recentes quando o diálogo é aberto
     setIsLoading(true);
     try {
@@ -46,8 +47,28 @@ const TripFinder = () => {
       return;
     }
 
-    navigate(`/trip/${tripId}`);
-    setIsOpen(false);
+    // Verifica se o ID da pescaria existe antes de navegar
+    apiService.fetchTrip(tripId)
+      .then(data => {
+        if (data) {
+          navigate(`/trip/${tripId}`);
+          setIsOpen(false);
+        } else {
+          toast({
+            title: "Pescaria não encontrada",
+            description: `Não foi possível encontrar a pescaria com ID: ${tripId}`,
+            variant: "destructive",
+          });
+        }
+      })
+      .catch(error => {
+        console.error("Erro ao buscar pescaria:", error);
+        toast({
+          title: "Erro ao buscar",
+          description: "Houve um erro ao buscar a pescaria. Tente novamente.",
+          variant: "destructive",
+        });
+      });
   };
 
   const formatDate = (timestamp: number) => {
