@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,38 +14,23 @@ interface Trip {
   participants: number;
 }
 
-interface TripFinderProps {
-  isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
-}
-
-const TripFinder: React.FC<TripFinderProps> = ({ isOpen, setIsOpen }) => {
+const TripFinder = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(false);
   const [tripId, setTripId] = useState("");
   const [recentTrips, setRecentTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load recent trips when dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      loadRecentTrips();
-    }
-  }, [isOpen]);
-
-  const loadRecentTrips = async () => {
-    setTripId(""); // Reset input field
+  const openDialog = async () => {
+    setIsOpen(true);
+    // Carrega as pescarias recentes quando o diálogo é aberto
     setIsLoading(true);
     try {
       const trips = await apiService.getAllTrips();
-      setRecentTrips(trips.slice(0, 5)); // Show only 5 most recent
+      setRecentTrips(trips.slice(0, 5)); // Exibe apenas as 5 mais recentes
     } catch (error) {
       console.error("Erro ao carregar pescarias recentes:", error);
-      toast({
-        title: "Erro ao carregar histórico",
-        description: "Não foi possível carregar o histórico de pescarias.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -61,28 +46,8 @@ const TripFinder: React.FC<TripFinderProps> = ({ isOpen, setIsOpen }) => {
       return;
     }
 
-    // Verifica se o ID da pescaria existe antes de navegar
-    apiService.fetchTrip(tripId)
-      .then(data => {
-        if (data) {
-          navigate(`/trip/${tripId}`);
-          setIsOpen(false);
-        } else {
-          toast({
-            title: "Pescaria não encontrada",
-            description: `Não foi possível encontrar a pescaria com ID: ${tripId}`,
-            variant: "destructive",
-          });
-        }
-      })
-      .catch(error => {
-        console.error("Erro ao buscar pescaria:", error);
-        toast({
-          title: "Erro ao buscar",
-          description: "Houve um erro ao buscar a pescaria. Tente novamente.",
-          variant: "destructive",
-        });
-      });
+    navigate(`/trip/${tripId}`);
+    setIsOpen(false);
   };
 
   const formatDate = (timestamp: number) => {
@@ -96,73 +61,84 @@ const TripFinder: React.FC<TripFinderProps> = ({ isOpen, setIsOpen }) => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Buscar Pescaria</DialogTitle>
-          <DialogDescription>
-            Digite o ID da pescaria que deseja encontrar ou selecione uma recente.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="flex items-center space-x-2 py-4">
-          <Input
-            value={tripId}
-            onChange={(e) => setTripId(e.target.value)}
-            placeholder="ID da pescaria"
-            className="flex-1"
-          />
-          <Button onClick={findTrip} type="submit">
-            <Search className="w-4 h-4 mr-2" />
-            Buscar
-          </Button>
-        </div>
-        
-        {isLoading ? (
-          <div className="py-4 text-center text-muted-foreground">Carregando...</div>
-        ) : (
-          <>
-            {recentTrips.length > 0 ? (
-              <>
-                <h4 className="font-medium text-sm mb-2">Pescarias Recentes</h4>
-                <div className="space-y-2">
-                  {recentTrips.map((trip) => (
-                    <Button
-                      key={trip.id}
-                      variant="outline"
-                      className="w-full justify-between text-left font-normal"
-                      onClick={() => {
-                        navigate(`/trip/${trip.id}`);
-                        setIsOpen(false);
-                      }}
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium">Pescaria #{trip.id}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(trip.lastUpdated)} • {trip.participants} participantes
-                        </span>
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="py-4 text-center text-muted-foreground">
-                Nenhuma pescaria encontrada no histórico.
-              </div>
-            )}
-          </>
-        )}
+    <>
+      <Button 
+        onClick={openDialog} 
+        variant="outline" 
+        className="flex items-center space-x-1"
+      >
+        <History className="w-4 h-4" />
+        <span>Histórico</span>
+      </Button>
 
-        <DialogFooter className="sm:justify-between">
-          <DialogClose asChild>
-            <Button type="button" variant="secondary">
-              Cancelar
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Buscar Pescaria</DialogTitle>
+            <DialogDescription>
+              Digite o ID da pescaria que deseja encontrar ou selecione uma recente.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex items-center space-x-2 py-4">
+            <Input
+              value={tripId}
+              onChange={(e) => setTripId(e.target.value)}
+              placeholder="ID da pescaria"
+              className="flex-1"
+            />
+            <Button onClick={findTrip} type="submit">
+              <Search className="w-4 h-4 mr-2" />
+              Buscar
             </Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </div>
+          
+          {isLoading ? (
+            <div className="py-4 text-center text-muted-foreground">Carregando...</div>
+          ) : (
+            <>
+              {recentTrips.length > 0 ? (
+                <>
+                  <h4 className="font-medium text-sm mb-2">Pescarias Recentes</h4>
+                  <div className="space-y-2">
+                    {recentTrips.map((trip) => (
+                      <Button
+                        key={trip.id}
+                        variant="outline"
+                        className="w-full justify-between text-left font-normal"
+                        onClick={() => {
+                          navigate(`/trip/${trip.id}`);
+                          setIsOpen(false);
+                        }}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">Pescaria #{trip.id}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(trip.lastUpdated)} • {trip.participants} participantes
+                          </span>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="py-4 text-center text-muted-foreground">
+                  Nenhuma pescaria encontrada no histórico.
+                </div>
+              )}
+            </>
+          )}
+
+          <DialogFooter className="sm:justify-between">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Cancelar
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
