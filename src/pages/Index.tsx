@@ -50,39 +50,31 @@ const Index = () => {
           Calcule facilmente quanto cada participante deve pagar ou receber após uma boa pescaria!!!
         </p>
         
-        {/* Barra de botões reorganizada: Atualizar, Histórico, Copiar Link, Nova Pescaria */}
+        {/* Barra de botões simplificada, sem duplicações */}
         <div className="flex flex-wrap gap-2 justify-center mb-6">
-          {/* Primeira linha: Atualizar e Histórico */}
-          <div className="flex flex-wrap gap-2 justify-center w-full">
-            {tripId && (
-              <>
-                <Button variant="outline" onClick={() => window.location.reload()}>
-                  <RefreshCw className="mr-1" />
-                  Atualizar
-                </Button>
-                
-                <Button variant="outline" onClick={openTripFinder}>
-                  <History className="mr-1" />
-                  Histórico
-                </Button>
-              </>
-            )}
-          </div>
-          
-          {/* Segunda linha: Copiar Link e Nova Pescaria */}
-          <div className="flex flex-wrap gap-2 justify-center w-full">
-            {tripId && (
+          {tripId && (
+            <>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                <RefreshCw className="mr-1" />
+                Atualizar
+              </Button>
+              
+              <Button variant="outline" onClick={openTripFinder}>
+                <History className="mr-1" />
+                Histórico
+              </Button>
+              
               <Button variant="outline" onClick={handleCopyLink}>
                 <Copy className="mr-1" />
                 Copiar Link
               </Button>
-            )}
-            
-            <Button variant="default" onClick={() => window.location.href = "/"}>
-              <Plus className="mr-1" />
-              Nova Pescaria
-            </Button>
-          </div>
+            </>
+          )}
+          
+          <Button variant="default" onClick={() => window.location.href = "/"}>
+            <Plus className="mr-1" />
+            Nova Pescaria
+          </Button>
         </div>
         
         {/* TripFinder componente que será controlado pelo botão de histórico */}
