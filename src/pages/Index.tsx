@@ -1,13 +1,16 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import ExpenseSplitter from "@/components/ExpenseSplitter";
 import TripFinder from "@/components/TripFinder";
 import { Fish, RefreshCw, History, Copy, Plus, CloudSun } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const { tripId } = useParams();
+  const { toast } = useToast();
+  const [isFinderOpen, setIsFinderOpen] = useState(false);
   
   // Define o título da página para incluir o ID da viagem se disponível
   useEffect(() => {
@@ -22,9 +25,15 @@ const Index = () => {
     if (tripId) {
       const url = `${window.location.origin}/trip/${tripId}`;
       navigator.clipboard.writeText(url);
-      // Seria bom adicionar uma notificação de sucesso aqui
-      alert("Link copiado para a área de transferência!");
+      toast({
+        title: "Link copiado!",
+        description: "Link da pescaria copiado para a área de transferência.",
+      });
     }
+  };
+
+  const openTripFinder = () => {
+    setIsFinderOpen(true);
   };
   
   return (
@@ -41,37 +50,43 @@ const Index = () => {
           Calcule facilmente quanto cada participante deve pagar ou receber após uma boa pescaria!!!
         </p>
         
-        {/* Barra de botões com a ordem específica: Atualizar, Histórico, Copiar Link, Nova Pescaria */}
+        {/* Barra de botões reorganizada: Atualizar, Histórico, Copiar Link, Nova Pescaria */}
         <div className="flex flex-wrap gap-2 justify-center mb-6">
-          {tripId && (
-            <>
-              <Button variant="outline" onClick={() => window.location.reload()}>
-                <RefreshCw className="mr-1" />
-                Atualizar
-              </Button>
-              
-              <Button variant="outline" onClick={() => document.getElementById('open-trip-finder')?.click()}>
-                <History className="mr-1" />
-                Histórico
-              </Button>
-              
+          {/* Primeira linha: Atualizar e Histórico */}
+          <div className="flex flex-wrap gap-2 justify-center w-full">
+            {tripId && (
+              <>
+                <Button variant="outline" onClick={() => window.location.reload()}>
+                  <RefreshCw className="mr-1" />
+                  Atualizar
+                </Button>
+                
+                <Button variant="outline" onClick={openTripFinder}>
+                  <History className="mr-1" />
+                  Histórico
+                </Button>
+              </>
+            )}
+          </div>
+          
+          {/* Segunda linha: Copiar Link e Nova Pescaria */}
+          <div className="flex flex-wrap gap-2 justify-center w-full">
+            {tripId && (
               <Button variant="outline" onClick={handleCopyLink}>
                 <Copy className="mr-1" />
                 Copiar Link
               </Button>
-            </>
-          )}
-          
-          <Button variant="default" onClick={() => window.location.href = "/"}>
-            <Plus className="mr-1" />
-            Nova Pescaria
-          </Button>
+            )}
+            
+            <Button variant="default" onClick={() => window.location.href = "/"}>
+              <Plus className="mr-1" />
+              Nova Pescaria
+            </Button>
+          </div>
         </div>
         
-        {/* TripFinder escondido que será acionado pelo botão de histórico */}
-        <div className="hidden">
-          <TripFinder />
-        </div>
+        {/* TripFinder componente que será controlado pelo botão de histórico */}
+        <TripFinder isOpen={isFinderOpen} setIsOpen={setIsFinderOpen} />
         
         {tripId && (
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-center justify-center gap-2 max-w-md mx-auto">
