@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import ExpenseSplitter from "@/components/ExpenseSplitter";
 import TripFinder from "@/components/TripFinder";
-import { Fish, RefreshCw, History, Copy, Plus } from "lucide-react";
+import { Fish, RefreshCw, History, Copy, Plus, CloudSun } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
