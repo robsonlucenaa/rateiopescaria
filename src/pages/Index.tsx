@@ -2,8 +2,9 @@
 import React, { useEffect } from "react";
 import ExpenseSplitter from "@/components/ExpenseSplitter";
 import TripFinder from "@/components/TripFinder";
-import { Fish, RefreshCw, CloudSun } from "lucide-react";
+import { Fish, RefreshCw, History, Copy, Plus } from "lucide-react";
 import { useParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const { tripId } = useParams();
@@ -16,6 +17,15 @@ const Index = () => {
       document.title = "Rateio de Pescaria";
     }
   }, [tripId]);
+
+  const handleCopyLink = () => {
+    if (tripId) {
+      const url = `${window.location.origin}/trip/${tripId}`;
+      navigator.clipboard.writeText(url);
+      // Seria bom adicionar uma notificação de sucesso aqui
+      alert("Link copiado para a área de transferência!");
+    }
+  };
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/30 px-4 py-12">
@@ -31,7 +41,37 @@ const Index = () => {
           Calcule facilmente quanto cada participante deve pagar ou receber após uma boa pescaria!!!
         </p>
         
-        {/* Removemos o TripFinder daqui, pois vamos adicioná-lo junto ao ExpenseSplitter */}
+        {/* Barra de botões com a ordem específica: Atualizar, Histórico, Copiar Link, Nova Pescaria */}
+        <div className="flex flex-wrap gap-2 justify-center mb-6">
+          {tripId && (
+            <>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                <RefreshCw className="mr-1" />
+                Atualizar
+              </Button>
+              
+              <Button variant="outline" onClick={() => document.getElementById('open-trip-finder')?.click()}>
+                <History className="mr-1" />
+                Histórico
+              </Button>
+              
+              <Button variant="outline" onClick={handleCopyLink}>
+                <Copy className="mr-1" />
+                Copiar Link
+              </Button>
+            </>
+          )}
+          
+          <Button variant="default" onClick={() => window.location.href = "/"}>
+            <Plus className="mr-1" />
+            Nova Pescaria
+          </Button>
+        </div>
+        
+        {/* TripFinder escondido que será acionado pelo botão de histórico */}
+        <div className="hidden">
+          <TripFinder />
+        </div>
         
         {tripId && (
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-center justify-center gap-2 max-w-md mx-auto">
