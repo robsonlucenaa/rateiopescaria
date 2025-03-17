@@ -51,12 +51,27 @@ export const apiService = {
   // Salvar uma pescaria
   saveTrip: async (tripId: string, data: FishingTripData): Promise<void> => {
     try {
+      if (!tripId) {
+        throw new Error("ID da pescaria é necessário para salvar");
+      }
+      
+      // Verificar se temos participantes e despesas
+      if (!data.participants) data.participants = [];
+      if (!data.expenses) data.expenses = [];
+      
       // Adiciona timestamp atual
       data.lastUpdated = Date.now();
-      localStorage.setItem(`fishing-trip-${tripId}`, JSON.stringify(data));
       
-      // Em um backend real, isso seria uma chamada de API
-      console.log(`Pescaria ${tripId} salva no "banco de dados"`);
+      // Garante que o ID da pescaria esteja no formato correto
+      const storageKey = tripId.startsWith("fishing-trip-") ? tripId : `fishing-trip-${tripId}`;
+      
+      // Para evitar duplicação de prefixo
+      const actualTripId = tripId.startsWith("fishing-trip-") ? tripId.replace("fishing-trip-", "") : tripId;
+      
+      // Salva no localStorage com o formato correto da chave
+      localStorage.setItem(`fishing-trip-${actualTripId}`, JSON.stringify(data));
+      
+      console.log(`Pescaria ${actualTripId} salva no "banco de dados" com ${data.participants.length} participantes e ${data.expenses.length} despesas`);
       
       // Simula latência de rede
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -79,6 +94,22 @@ export const apiService = {
     } catch (error) {
       console.error("Erro ao verificar atualizações:", error);
       return { hasUpdates: false };
+    }
+  },
+  
+  // Excluir uma pescaria
+  deleteTrip: async (tripId: string): Promise<void> => {
+    try {
+      localStorage.removeItem(`fishing-trip-${tripId}`);
+      console.log(`Pescaria ${tripId} excluída do "banco de dados"`);
+      
+      // Simula latência de rede
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      return;
+    } catch (error) {
+      console.error("Erro ao excluir pescaria:", error);
+      throw new Error("Falha ao excluir dados da pescaria");
     }
   }
 };
