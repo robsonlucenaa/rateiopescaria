@@ -433,7 +433,6 @@ const ExpenseSplitter = () => {
       <div className="bg-primary/10 rounded-xl p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h3 className="text-sm font-medium text-primary">ID da Pescaria: {currentTripId}</h3>
-          <p className="text-xs text-muted-foreground">Compartilhe este ID para outros participantes</p>
         </div>
         <div className="flex space-x-2">
           <button
