@@ -9,6 +9,9 @@ const logDebug = (message: string, data?: any) => {
   console.log(`[ApiService] ${message}`, data || '');
 };
 
+// Prefixo padrão para chaves de armazenamento
+const STORAGE_PREFIX = "fishing-trip-";
+
 // Simulando uma API de backend com localStorage
 // Em uma implementação real, isso usaria chamadas fetch para um servidor
 export const apiService = {
@@ -21,8 +24,8 @@ export const apiService = {
       // Percorre todos os itens no localStorage
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith("fishing-trip-")) {
-          const tripId = key.replace("fishing-trip-", "");
+        if (key && key.startsWith(STORAGE_PREFIX)) {
+          const tripId = key.replace(STORAGE_PREFIX, "");
           const data = JSON.parse(localStorage.getItem(key) || "{}") as FishingTripData;
           
           trips.push({
@@ -46,20 +49,39 @@ export const apiService = {
   // Buscar uma pescaria por ID
   fetchTrip: async (tripId: string): Promise<FishingTripData | null> => {
     try {
-      // Normaliza o ID para evitar problemas
-      const normalizedId = tripId.replace("fishing-trip-", "");
-      const storageKey = `fishing-trip-${normalizedId}`;
+      if (!tripId) {
+        logDebug("ID de pescaria inválido na função fetchTrip.");
+        return null;
+      }
+      
+      // Normaliza o ID para garantir consistência
+      const normalizedId = tripId.replace(STORAGE_PREFIX, "");
+      const storageKey = `${STORAGE_PREFIX}${normalizedId}`;
       
       logDebug(`Buscando pescaria com ID: ${normalizedId}, chave de armazenamento: ${storageKey}`);
       
       const tripData = localStorage.getItem(storageKey);
       if (tripData) {
-        const parsedData = JSON.parse(tripData) as FishingTripData;
-        logDebug(`Pescaria ${normalizedId} encontrada:`, parsedData);
-        return parsedData;
+        try {
+          const parsedData = JSON.parse(tripData) as FishingTripData;
+          logDebug(`Pescaria ${normalizedId} encontrada com sucesso:`, {
+            participantes: parsedData.participants?.length || 0,
+            despesas: parsedData.expenses?.length || 0,
+            ultimaAtualizacao: new Date(parsedData.lastUpdated).toISOString()
+          });
+          
+          // Verifica a integridade dos dados
+          if (!parsedData.participants) parsedData.participants = [];
+          if (!parsedData.expenses) parsedData.expenses = [];
+          
+          return parsedData;
+        } catch (parseError) {
+          console.error(`Erro ao analisar dados da pescaria ${normalizedId}:`, parseError);
+          return null;
+        }
       }
       
-      logDebug(`Pescaria ${normalizedId} não encontrada`);
+      logDebug(`Pescaria ${normalizedId} não encontrada no armazenamento local`);
       return null;
     } catch (error) {
       console.error("Erro ao buscar pescaria:", error);
@@ -74,9 +96,9 @@ export const apiService = {
         throw new Error("ID da pescaria é necessário para salvar");
       }
       
-      // Normalize o ID da pescaria (remova o prefixo se já existir)
-      const normalizedId = tripId.replace("fishing-trip-", "");
-      const storageKey = `fishing-trip-${normalizedId}`;
+      // Normaliza o ID da pescaria (remova o prefixo se já existir)
+      const normalizedId = tripId.replace(STORAGE_PREFIX, "");
+      const storageKey = `${STORAGE_PREFIX}${normalizedId}`;
       
       // Verificar se temos participantes e despesas
       if (!data.participants) data.participants = [];
@@ -88,7 +110,7 @@ export const apiService = {
       // Salva no localStorage com a chave normalizada
       localStorage.setItem(storageKey, JSON.stringify(data));
       
-      logDebug(`Pescaria ${normalizedId} salva:`, {
+      logDebug(`Pescaria ${normalizedId} salva com sucesso:`, {
         key: storageKey,
         participants: data.participants.length,
         expenses: data.expenses.length,
@@ -96,8 +118,17 @@ export const apiService = {
       });
       
       // Verifica se os dados foram realmente salvos
-      const verificacao = localStorage.getItem(storageKey);
-      logDebug(`Verificação após salvar:`, verificacao ? "Dados presentes" : "ERRO: Dados ausentes");
+      const savedData = localStorage.getItem(storageKey);
+      if (savedData) {
+        try {
+          const parsedSaved = JSON.parse(savedData) as FishingTripData;
+          logDebug(`Verificação após salvar: dados salvos corretamente com ${parsedSaved.participants.length} participantes e ${parsedSaved.expenses.length} despesas.`);
+        } catch (parseError) {
+          console.error("Erro na verificação após salvar:", parseError);
+        }
+      } else {
+        console.error(`ERRO CRÍTICO: Dados da pescaria ${normalizedId} não puderam ser verificados após salvar.`);
+      }
       
       // Simula latência de rede
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -112,8 +143,13 @@ export const apiService = {
   // Verificar se há uma versão mais recente dos dados da pescaria
   checkForUpdates: async (tripId: string, lastSyncTime: number): Promise<{hasUpdates: boolean, data?: FishingTripData}> => {
     try {
+      if (!tripId) {
+        logDebug("ID de pescaria inválido na função checkForUpdates.");
+        return { hasUpdates: false };
+      }
+      
       // Normaliza o ID para garantir consistência
-      const normalizedId = tripId.replace("fishing-trip-", "");
+      const normalizedId = tripId.replace(STORAGE_PREFIX, "");
       
       logDebug(`Verificando atualizações para ${normalizedId}, último sync: ${new Date(lastSyncTime).toISOString()}`);
       
@@ -134,12 +170,17 @@ export const apiService = {
   // Excluir uma pescaria
   deleteTrip: async (tripId: string): Promise<void> => {
     try {
+      if (!tripId) {
+        logDebug("ID de pescaria inválido na função deleteTrip.");
+        return;
+      }
+      
       // Normaliza o ID
-      const normalizedId = tripId.replace("fishing-trip-", "");
-      const storageKey = `fishing-trip-${normalizedId}`;
+      const normalizedId = tripId.replace(STORAGE_PREFIX, "");
+      const storageKey = `${STORAGE_PREFIX}${normalizedId}`;
       
       localStorage.removeItem(storageKey);
-      logDebug(`Pescaria ${normalizedId} excluída`);
+      logDebug(`Pescaria ${normalizedId} excluída com sucesso`);
       
       // Simula latência de rede
       await new Promise(resolve => setTimeout(resolve, 300));

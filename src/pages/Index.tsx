@@ -42,9 +42,6 @@ const Index = () => {
         <p>
           Desenvolvido por Lucena Solutions
         </p>
-        <p className="mt-2 text-primary font-medium">
-          ID da Pescaria: PQHB
-        </p>
       </footer>
     </div>
   );
