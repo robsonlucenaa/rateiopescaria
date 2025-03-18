@@ -4,6 +4,11 @@
 
 import { FishingTripData } from "@/components/ExpenseSplitter";
 
+// Função de log para depuração
+const logDebug = (message: string, data?: any) => {
+  console.log(`[ApiService] ${message}`, data || '');
+};
+
 // Simulando uma API de backend com localStorage
 // Em uma implementação real, isso usaria chamadas fetch para um servidor
 export const apiService = {
@@ -11,6 +16,8 @@ export const apiService = {
   getAllTrips: async (): Promise<{ id: string; lastUpdated: number; participants: number }[]> => {
     try {
       const trips: { id: string; lastUpdated: number; participants: number }[] = [];
+      logDebug(`Buscando todas as pescarias...`);
+      
       // Percorre todos os itens no localStorage
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -23,6 +30,8 @@ export const apiService = {
             lastUpdated: data.lastUpdated || 0,
             participants: data.participants?.length || 0
           });
+          
+          logDebug(`Encontrada pescaria ${tripId} com ${data.participants?.length || 0} participantes`);
         }
       }
       
@@ -37,10 +46,20 @@ export const apiService = {
   // Buscar uma pescaria por ID
   fetchTrip: async (tripId: string): Promise<FishingTripData | null> => {
     try {
-      const tripData = localStorage.getItem(`fishing-trip-${tripId}`);
+      // Normaliza o ID para evitar problemas
+      const normalizedId = tripId.replace("fishing-trip-", "");
+      const storageKey = `fishing-trip-${normalizedId}`;
+      
+      logDebug(`Buscando pescaria com ID: ${normalizedId}, chave de armazenamento: ${storageKey}`);
+      
+      const tripData = localStorage.getItem(storageKey);
       if (tripData) {
-        return JSON.parse(tripData) as FishingTripData;
+        const parsedData = JSON.parse(tripData) as FishingTripData;
+        logDebug(`Pescaria ${normalizedId} encontrada:`, parsedData);
+        return parsedData;
       }
+      
+      logDebug(`Pescaria ${normalizedId} não encontrada`);
       return null;
     } catch (error) {
       console.error("Erro ao buscar pescaria:", error);
@@ -55,6 +74,10 @@ export const apiService = {
         throw new Error("ID da pescaria é necessário para salvar");
       }
       
+      // Normalize o ID da pescaria (remova o prefixo se já existir)
+      const normalizedId = tripId.replace("fishing-trip-", "");
+      const storageKey = `fishing-trip-${normalizedId}`;
+      
       // Verificar se temos participantes e despesas
       if (!data.participants) data.participants = [];
       if (!data.expenses) data.expenses = [];
@@ -62,16 +85,19 @@ export const apiService = {
       // Adiciona timestamp atual
       data.lastUpdated = Date.now();
       
-      // Garante que o ID da pescaria esteja no formato correto
-      const storageKey = tripId.startsWith("fishing-trip-") ? tripId : `fishing-trip-${tripId}`;
+      // Salva no localStorage com a chave normalizada
+      localStorage.setItem(storageKey, JSON.stringify(data));
       
-      // Para evitar duplicação de prefixo
-      const actualTripId = tripId.startsWith("fishing-trip-") ? tripId.replace("fishing-trip-", "") : tripId;
+      logDebug(`Pescaria ${normalizedId} salva:`, {
+        key: storageKey,
+        participants: data.participants.length,
+        expenses: data.expenses.length,
+        lastUpdated: new Date(data.lastUpdated).toISOString()
+      });
       
-      // Salva no localStorage com o formato correto da chave
-      localStorage.setItem(`fishing-trip-${actualTripId}`, JSON.stringify(data));
-      
-      console.log(`Pescaria ${actualTripId} salva no "banco de dados" com ${data.participants.length} participantes e ${data.expenses.length} despesas`);
+      // Verifica se os dados foram realmente salvos
+      const verificacao = localStorage.getItem(storageKey);
+      logDebug(`Verificação após salvar:`, verificacao ? "Dados presentes" : "ERRO: Dados ausentes");
       
       // Simula latência de rede
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -86,10 +112,18 @@ export const apiService = {
   // Verificar se há uma versão mais recente dos dados da pescaria
   checkForUpdates: async (tripId: string, lastSyncTime: number): Promise<{hasUpdates: boolean, data?: FishingTripData}> => {
     try {
-      const data = await apiService.fetchTrip(tripId);
+      // Normaliza o ID para garantir consistência
+      const normalizedId = tripId.replace("fishing-trip-", "");
+      
+      logDebug(`Verificando atualizações para ${normalizedId}, último sync: ${new Date(lastSyncTime).toISOString()}`);
+      
+      const data = await apiService.fetchTrip(normalizedId);
       if (data && data.lastUpdated > lastSyncTime) {
+        logDebug(`Atualizações encontradas para ${normalizedId}, timestamp: ${new Date(data.lastUpdated).toISOString()}`);
         return { hasUpdates: true, data };
       }
+      
+      logDebug(`Sem atualizações para ${normalizedId}`);
       return { hasUpdates: false };
     } catch (error) {
       console.error("Erro ao verificar atualizações:", error);
@@ -100,8 +134,12 @@ export const apiService = {
   // Excluir uma pescaria
   deleteTrip: async (tripId: string): Promise<void> => {
     try {
-      localStorage.removeItem(`fishing-trip-${tripId}`);
-      console.log(`Pescaria ${tripId} excluída do "banco de dados"`);
+      // Normaliza o ID
+      const normalizedId = tripId.replace("fishing-trip-", "");
+      const storageKey = `fishing-trip-${normalizedId}`;
+      
+      localStorage.removeItem(storageKey);
+      logDebug(`Pescaria ${normalizedId} excluída`);
       
       // Simula latência de rede
       await new Promise(resolve => setTimeout(resolve, 300));
