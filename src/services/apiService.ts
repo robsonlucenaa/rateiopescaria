@@ -36,7 +36,8 @@ export const apiService = {
       }
       
       const trips = data.map(trip => {
-        const tripData = trip.data as FishingTripData;
+        // Cast data to the correct type using as and type assertion
+        const tripData = (trip.data as any) as FishingTripData;
         return {
           id: trip.id,
           lastUpdated: tripData.lastUpdated || new Date(trip.last_updated).getTime(),
@@ -87,7 +88,8 @@ export const apiService = {
         return null;
       }
       
-      const tripData = data.data as FishingTripData;
+      // Cast data to the correct type using as and type assertion
+      const tripData = (data.data as any) as FishingTripData;
       
       logDebug(`Pescaria ${normalizedId} encontrada com sucesso:`, {
         participantes: tripData.participants?.length || 0,
@@ -129,7 +131,7 @@ export const apiService = {
         lastUpdated: new Date(data.lastUpdated).toISOString()
       });
       
-      // Tenta atualizar primeiro, se não existir, insere
+      // Corrigido: prepare o objeto de inserção corretamente
       const { error: upsertError } = await supabase
         .from('fishing_trips')
         .upsert({
@@ -179,7 +181,8 @@ export const apiService = {
         return { hasUpdates: false };
       }
       
-      const tripData = data.data as FishingTripData;
+      // Cast data to the correct type using as and type assertion
+      const tripData = (data.data as any) as FishingTripData;
       const dbLastUpdated = new Date(data.last_updated).getTime();
       
       if (dbLastUpdated > lastSyncTime) {
