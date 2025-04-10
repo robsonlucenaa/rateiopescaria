@@ -39,7 +39,7 @@ export const apiService = {
         const tripData = trip.data as FishingTripData;
         return {
           id: trip.id,
-          lastUpdated: tripData.lastUpdated || trip.last_updated.getTime(),
+          lastUpdated: tripData.lastUpdated || new Date(trip.last_updated).getTime(),
           participants: tripData.participants?.length || 0
         };
       });
@@ -136,8 +136,7 @@ export const apiService = {
           id: normalizedId,
           data: data,
           last_updated: new Date()
-        })
-        .select();
+        });
       
       if (upsertError) {
         console.error(`Erro ao salvar pescaria ${normalizedId}:`, upsertError);
