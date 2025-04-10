@@ -131,12 +131,12 @@ export const apiService = {
         lastUpdated: new Date(data.lastUpdated).toISOString()
       });
       
-      // Corrigido: prepare o objeto de inserção corretamente
+      // Correto: prepare um único objeto para o upsert (não um array)
       const { error: upsertError } = await supabase
         .from('fishing_trips')
         .upsert({
           id: normalizedId,
-          data: data,
+          data: data as any,
           last_updated: new Date()
         });
       
