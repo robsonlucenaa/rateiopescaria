@@ -8,7 +8,8 @@ import TabNavigation from "./TabNavigation";
 import TripControlBar from "./TripControlBar";
 
 // Re-exportando para manter compatibilidade com código existente
-export { FishingTripData, Participant, Expense } from "@/types/fishingTrip";
+// Usando "export type" para resolver o erro TS1205
+export type { FishingTripData, Participant, Expense } from "@/types/fishingTrip";
 
 const ExpenseSplitter = () => {
   const {

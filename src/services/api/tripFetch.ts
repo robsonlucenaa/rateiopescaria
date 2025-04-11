@@ -2,7 +2,7 @@
 // Serviço para buscar dados de uma pescaria específica
 
 import { supabase } from "@/integrations/supabase/client";
-import { FishingTripData } from "@/components/ExpenseSplitter";
+import { FishingTripData } from "@/types/fishingTrip";
 import { logDebug, STORAGE_PREFIX } from "./core";
 
 // Buscar uma pescaria por ID

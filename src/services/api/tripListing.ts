@@ -2,7 +2,7 @@
 // Serviço para listar pescarias
 
 import { supabase } from "@/integrations/supabase/client";
-import { FishingTripData } from "@/components/ExpenseSplitter";
+import { FishingTripData } from "@/types/fishingTrip";
 import { logDebug } from "./core";
 
 // Listar todas as pescarias

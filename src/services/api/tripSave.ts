@@ -2,7 +2,7 @@
 // Serviço para salvar dados de uma pescaria
 
 import { supabase } from "@/integrations/supabase/client";
-import { FishingTripData } from "@/components/ExpenseSplitter";
+import { FishingTripData } from "@/types/fishingTrip";
 import { logDebug, STORAGE_PREFIX, simulateNetworkLatency } from "./core";
 
 // Salvar uma pescaria

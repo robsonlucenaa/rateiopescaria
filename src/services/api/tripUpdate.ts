@@ -2,7 +2,7 @@
 // Serviço para verificar atualizações de uma pescaria
 
 import { supabase } from "@/integrations/supabase/client";
-import { FishingTripData } from "@/components/ExpenseSplitter";
+import { FishingTripData } from "@/types/fishingTrip";
 import { logDebug, STORAGE_PREFIX } from "./core";
 
 // Verificar se há uma versão mais recente dos dados da pescaria
