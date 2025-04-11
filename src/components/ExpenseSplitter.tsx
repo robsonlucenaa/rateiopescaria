@@ -3,7 +3,7 @@ import React from "react";
 import { useFishingTrip } from "@/hooks/useFishingTrip";
 import ParticipantsTab from "./ParticipantsTab";
 import ExpensesTab from "./ExpensesTab";
-import SummaryCard from "./SummaryCard";
+import SummaryCard from "./summary/SummaryCard";
 import TabNavigation from "./TabNavigation";
 import TripControlBar from "./TripControlBar";
 
