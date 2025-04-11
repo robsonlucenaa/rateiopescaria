@@ -29,7 +29,7 @@ export const saveTrip = async (tripId: string, data: FishingTripData): Promise<v
     });
     
     // Prepare um único objeto para o upsert
-    const { error: upsertError } = await supabase
+    const { data: responseData, error: upsertError } = await supabase
       .from('fishing_trips')
       .upsert({
         id: normalizedId,
@@ -39,7 +39,7 @@ export const saveTrip = async (tripId: string, data: FishingTripData): Promise<v
     
     if (upsertError) {
       console.error(`Erro ao salvar pescaria ${normalizedId}:`, upsertError);
-      throw new Error("Falha ao salvar dados da pescaria no banco de dados");
+      throw new Error(`Falha ao salvar dados da pescaria: ${upsertError.message}`);
     }
     
     logDebug(`Pescaria ${normalizedId} salva com sucesso no Supabase`);
@@ -50,6 +50,6 @@ export const saveTrip = async (tripId: string, data: FishingTripData): Promise<v
     return;
   } catch (error) {
     console.error("Erro ao salvar pescaria:", error);
-    throw new Error("Falha ao salvar dados da pescaria");
+    throw error; // Repassar o erro original em vez de criar um novo
   }
 };

@@ -8,8 +8,11 @@ import { useSummary } from "./fishing-trip/useSummary";
 import { useShareLink } from "./fishing-trip/useShareLink";
 import { useTabNavigation } from "./fishing-trip/useTabNavigation";
 import { FishingTripData } from "@/types/fishingTrip";
+import { useToast } from "@/components/ui/use-toast";
 
 export function useFishingTrip() {
+  const { toast } = useToast();
+  
   // Combine all our smaller hooks
   const {
     currentTripId,
@@ -60,16 +63,25 @@ export function useFishingTrip() {
   useEffect(() => {
     const initializeData = async () => {
       if (currentTripId && isInitialLoad) {
-        const tripData = await loadTripData(currentTripId);
-        if (tripData) {
-          setParticipants(tripData.participants || []);
-          setExpenses(tripData.expenses || []);
-          updateActiveTabBasedOnData(
-            tripData.participants || [], 
-            tripData.expenses || [], 
-            isInitialLoad
-          );
-          setIsInitialLoad(false);
+        try {
+          const tripData = await loadTripData(currentTripId);
+          if (tripData) {
+            setParticipants(tripData.participants || []);
+            setExpenses(tripData.expenses || []);
+            updateActiveTabBasedOnData(
+              tripData.participants || [], 
+              tripData.expenses || [], 
+              isInitialLoad
+            );
+            setIsInitialLoad(false);
+          }
+        } catch (error) {
+          console.error("Falha ao carregar dados iniciais:", error);
+          toast({
+            title: "Erro ao carregar",
+            description: "Não foi possível carregar os dados da pescaria.",
+            variant: "destructive",
+          });
         }
       }
     };
@@ -94,7 +106,12 @@ export function useFishingTrip() {
       }
     };
     
-    handleSaveData();
+    // Use debounce para não salvar a cada pequena alteração
+    const timeoutId = setTimeout(() => {
+      handleSaveData();
+    }, 1500);  // Aguarde 1.5s após a última alteração
+    
+    return () => clearTimeout(timeoutId);
   }, [participants, expenses, currentTripId, isInitialLoad, lastDataUpdate]);
 
   // Wrapper functions to encapsulate internal implementation

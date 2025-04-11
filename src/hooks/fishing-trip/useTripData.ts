@@ -30,25 +30,30 @@ export function useTripData() {
 
   // Configurar o ID da viagem e carregar dados
   useEffect(() => {
-    if (tripId) {
-      setCurrentTripId(tripId);
-      loadTripData(tripId);
-      console.log(`Carregando dados da pescaria ID: ${tripId}`);
-    } else {
-      const newTripId = generateTripId();
-      setCurrentTripId(newTripId);
-      navigate(`/trip/${newTripId}`, { replace: true });
-      console.log(`Nova pescaria criada com ID: ${newTripId}`);
-    }
+    const setupTrip = async () => {
+      if (tripId) {
+        console.log(`Configurando pescaria com ID: ${tripId}`);
+        setCurrentTripId(tripId);
+        await loadTripData(tripId);
+      } else {
+        const newTripId = generateTripId();
+        console.log(`Criando nova pescaria com ID: ${newTripId}`);
+        setCurrentTripId(newTripId);
+        navigate(`/trip/${newTripId}`, { replace: true });
+      }
+    };
+    
+    setupTrip();
   }, [tripId, navigate]);
 
   // Function to load trip data from backend
   const loadTripData = async (id: string) => {
-    console.log(`Attempting to load trip data for ID: ${id}`);
+    console.log(`Tentando carregar dados da pescaria ID: ${id}`);
     try {
       const tripData = await apiService.fetchTrip(id);
       
       if (tripData) {
+        console.log(`Dados carregados para ID: ${id}`, tripData);
         setLastSyncTime(tripData.lastUpdated || Date.now());
         setLastDataUpdate(tripData.lastUpdated || Date.now());
         
@@ -57,21 +62,33 @@ export function useTripData() {
           description: `Pescaria #${id} carregada com sucesso!`,
         });
         
-        console.log(`Loaded trip data for ID: ${id}`, tripData);
         return tripData;
       } else {
-        console.log(`No data found for trip ID: ${id}, creating new trip`);
+        console.log(`Nenhum dado encontrado para ID: ${id}, criando nova pescaria`);
         // If no data exists yet, create an empty trip
         const newTripData: FishingTripData = { 
           participants: [], 
           expenses: [], 
           lastUpdated: Date.now() 
         };
-        await apiService.saveTrip(id, newTripData);
+        
+        // Salvar a nova pescaria no banco de dados
+        try {
+          await apiService.saveTrip(id, newTripData);
+          console.log(`Nova pescaria criada e salva com ID: ${id}`);
+        } catch (saveError) {
+          console.error(`Erro ao salvar nova pescaria: ${saveError}`);
+          toast({
+            title: "Erro ao criar pescaria",
+            description: "Não foi possível criar uma nova pescaria.",
+            variant: "destructive",
+          });
+        }
+        
         return newTripData;
       }
     } catch (error) {
-      console.error("Error loading trip data:", error);
+      console.error("Erro ao carregar dados da pescaria:", error);
       toast({
         title: "Erro ao carregar dados",
         description: "Não foi possível carregar os dados da pescaria.",

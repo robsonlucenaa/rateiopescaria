@@ -2,7 +2,7 @@
 // Serviço de API para armazenar e recuperar dados de pescarias
 // Usando Supabase para persistência de dados
 
-import { FishingTripData } from "@/components/ExpenseSplitter";
+import { FishingTripData } from "@/types/fishingTrip";
 import { getAllTrips } from "./api/tripListing";
 import { fetchTrip } from "./api/tripFetch";
 import { saveTrip } from "./api/tripSave";
