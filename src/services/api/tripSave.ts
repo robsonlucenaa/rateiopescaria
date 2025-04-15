@@ -34,7 +34,7 @@ export const saveTrip = async (tripId: string, data: FishingTripData): Promise<v
       .upsert({
         id: normalizedId,
         data: data as any,
-        last_updated: new Date().toISOString() // Convert Date to string to match the expected type
+        last_updated: new Date().toISOString()
       });
     
     if (upsertError) {
@@ -50,6 +50,6 @@ export const saveTrip = async (tripId: string, data: FishingTripData): Promise<v
     return;
   } catch (error) {
     console.error("Erro ao salvar pescaria:", error);
-    throw error; // Repassar o erro original em vez de criar um novo
+    throw error;
   }
 };
