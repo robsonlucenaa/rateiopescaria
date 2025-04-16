@@ -1,6 +1,5 @@
 
 import { useEffect } from "react";
-import { useToast } from "@/components/ui/use-toast";
 import { apiService } from "@/services/apiService";
 import { FishingTripData } from "@/types/fishingTrip";
 
@@ -13,8 +12,8 @@ export function useSyncData(
   setParticipants: (participants: any[]) => void, 
   setExpenses: (expenses: any[]) => void
 ) {
-  const { toast } = useToast();
-
+  // Removed useToast hook
+  
   // Poll for updates regularly from the backend
   useEffect(() => {
     if (!currentTripId) return;
@@ -29,10 +28,7 @@ export function useSyncData(
           setExpenses(data.expenses);
           setLastSyncTime(data.lastUpdated);
           
-          toast({
-            title: "Dados atualizados",
-            description: "Novos dados da pescaria foram encontrados!",
-          });
+          // Removed toast notification
         }
       } catch (error) {
         console.error("Error checking for updates:", error);
@@ -41,7 +37,7 @@ export function useSyncData(
 
     const pollInterval = setInterval(checkForUpdates, SYNC_INTERVAL);
     return () => clearInterval(pollInterval);
-  }, [currentTripId, lastSyncTime, toast, setParticipants, setExpenses, setLastSyncTime]);
+  }, [currentTripId, lastSyncTime, setParticipants, setExpenses, setLastSyncTime]);
 
   const saveData = async (
     currentTripId: string, 
@@ -66,17 +62,10 @@ export function useSyncData(
       await apiService.saveTrip(currentTripId, dataToSave);
       setLastDataUpdate(dataToSave.lastUpdated);
       
-      toast({
-        title: "Dados salvos",
-        description: "Os dados da pescaria foram salvos com sucesso!",
-      });
+      // Removed toast notification for successful save
     } catch (error) {
       console.error("Error saving trip data:", error);
-      toast({
-        title: "Erro ao salvar",
-        description: "Não foi possível salvar os dados da pescaria. Tente novamente.",
-        variant: "destructive",
-      });
+      // Removed error toast notification
     } finally {
       setIsSaving(false);
     }
