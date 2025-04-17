@@ -30,41 +30,29 @@ export function useSummaryCalculation(participants: Participant[], expenses: Exp
     return [...participantBalances].sort((a, b) => a.balance - b.balance);
   }, [participantBalances]);
 
-  // Generate payment suggestions
+  // Generate payment suggestions for equal split
   const paymentSuggestions = useMemo(() => {
-    // Deep copy the participants with balances
-    const debtors = sortedParticipants
-      .filter(p => p.balance < 0)
-      .map(p => ({ ...p, remainingDebt: Math.abs(p.balance) }));
-    
-    const creditors = sortedParticipants
-      .filter(p => p.balance > 0)
-      .map(p => ({ ...p, remainingCredit: p.balance }));
-    
     const suggestions: PaymentSuggestion[] = [];
+    
+    // Find participants who paid more than their share (creditors)
+    const creditors = sortedParticipants.filter(p => p.balance > 0);
+    // Find participants who need to pay (debtors)
+    const debtors = sortedParticipants.filter(p => p.balance < 0);
 
-    // For each debtor, find creditors to pay
+    // For each debtor, calculate how much they need to pay to each creditor
     debtors.forEach(debtor => {
-      let remainingDebt = debtor.remainingDebt;
-      
-      // While this person still has debt and there are creditors to pay
       creditors.forEach(creditor => {
-        if (remainingDebt > 0 && creditor.remainingCredit > 0) {
-          // Calculate payment amount (minimum of remaining debt and credit)
-          const paymentAmount = Math.min(remainingDebt, creditor.remainingCredit);
-          
-          if (paymentAmount > 0) {
-            // Add suggestion
-            suggestions.push({
-              from: debtor.name,
-              to: creditor.name,
-              amount: paymentAmount
-            });
-            
-            // Update remaining amounts
-            remainingDebt -= paymentAmount;
-            creditor.remainingCredit -= paymentAmount;
-          }
+        // Calculate how much this debtor should pay to this creditor
+        const debtAmount = Math.abs(debtor.balance / creditors.length);
+        
+        // Only create suggestion if there's an actual amount to pay
+        if (debtAmount > 0) {
+          suggestions.push({
+            from: debtor.name,
+            to: creditor.name,
+            // Round to 2 decimal places to avoid floating point issues
+            amount: Math.round(debtAmount * 100) / 100
+          });
         }
       });
     });
