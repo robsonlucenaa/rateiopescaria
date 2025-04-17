@@ -30,32 +30,52 @@ export function useSummaryCalculation(participants: Participant[], expenses: Exp
     return [...participantBalances].sort((a, b) => a.balance - b.balance);
   }, [participantBalances]);
 
-  // Generate payment suggestions for equal split
+  // Generate payment suggestions based on algorithm provided
   const paymentSuggestions = useMemo(() => {
     const suggestions: PaymentSuggestion[] = [];
     
-    // Find participants who paid more than their share (creditors)
-    const creditors = sortedParticipants.filter(p => p.balance > 0);
-    // Find participants who need to pay (debtors)
-    const debtors = sortedParticipants.filter(p => p.balance < 0);
-
-    // For each debtor, calculate how much they need to pay to each creditor
-    debtors.forEach(debtor => {
-      creditors.forEach(creditor => {
-        // Calculate how much this debtor should pay to this creditor
-        const debtAmount = Math.abs(debtor.balance / creditors.length);
+    // Deep copy the participants to avoid mutating original data
+    const debtors = sortedParticipants
+      .filter(p => p.balance < 0)
+      .map(p => ({ ...p, remainingDebt: Math.abs(p.balance) }));
+    
+    const creditors = sortedParticipants
+      .filter(p => p.balance > 0)
+      .map(p => ({ ...p, remainingCredit: p.balance }));
+    
+    let i = 0, j = 0;
+    // Continue until we've processed all debtors or creditors
+    while (i < debtors.length && j < creditors.length) {
+      const debtor = debtors[i];
+      const creditor = creditors[j];
+      
+      // Find the minimum amount that can be transferred
+      const transferAmount = Math.min(debtor.remainingDebt, creditor.remainingCredit);
+      
+      // Only create suggestion if there's an actual amount to pay
+      if (transferAmount > 0.01) {
+        // Round to 2 decimal places to avoid floating point issues
+        const roundedAmount = Math.round(transferAmount * 100) / 100;
         
-        // Only create suggestion if there's an actual amount to pay
-        if (debtAmount > 0) {
-          suggestions.push({
-            from: debtor.name,
-            to: creditor.name,
-            // Round to 2 decimal places to avoid floating point issues
-            amount: Math.round(debtAmount * 100) / 100
-          });
-        }
-      });
-    });
+        suggestions.push({
+          from: debtor.name,
+          to: creditor.name,
+          amount: roundedAmount
+        });
+        
+        // Update the remaining amounts
+        debtor.remainingDebt -= transferAmount;
+        creditor.remainingCredit -= transferAmount;
+      }
+      
+      // Move to next person if their balance is nearly zero
+      if (debtor.remainingDebt < 0.01) {
+        i++;
+      }
+      if (creditor.remainingCredit < 0.01) {
+        j++;
+      }
+    }
 
     return suggestions;
   }, [sortedParticipants]);
