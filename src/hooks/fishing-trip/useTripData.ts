@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
 import { apiService } from "@/services/apiService";
 import { FishingTripData } from "@/types/fishingTrip";
 
@@ -17,7 +16,6 @@ const generateTripId = () => {
 };
 
 export function useTripData() {
-  const { toast } = useToast();
   const { tripId } = useParams();
   const navigate = useNavigate();
   
@@ -57,11 +55,6 @@ export function useTripData() {
         setLastSyncTime(tripData.lastUpdated || Date.now());
         setLastDataUpdate(tripData.lastUpdated || Date.now());
         
-        toast({
-          title: "Dados carregados",
-          description: `Pescaria #${id} carregada com sucesso!`,
-        });
-        
         return tripData;
       } else {
         console.log(`Nenhum dado encontrado para ID: ${id}, criando nova pescaria`);
@@ -78,22 +71,12 @@ export function useTripData() {
           console.log(`Nova pescaria criada e salva com ID: ${id}`);
         } catch (saveError) {
           console.error(`Erro ao salvar nova pescaria: ${saveError}`);
-          toast({
-            title: "Erro ao criar pescaria",
-            description: "Não foi possível criar uma nova pescaria.",
-            variant: "destructive",
-          });
         }
         
         return newTripData;
       }
     } catch (error) {
       console.error("Erro ao carregar dados da pescaria:", error);
-      toast({
-        title: "Erro ao carregar dados",
-        description: "Não foi possível carregar os dados da pescaria.",
-        variant: "destructive",
-      });
       return null;
     }
   };
@@ -104,18 +87,9 @@ export function useTripData() {
     if (currentTripId) {
       try {
         const tripData = await loadTripData(currentTripId);
-        toast({
-          title: "Dados atualizados",
-          description: "Dados da pescaria sincronizados com sucesso!",
-        });
         return tripData;
       } catch (error) {
         console.error("Error refreshing data:", error);
-        toast({
-          title: "Erro ao atualizar",
-          description: "Não foi possível atualizar os dados.",
-          variant: "destructive",
-        });
         return null;
       } finally {
         setTimeout(() => setIsRefreshing(false), 1000);
@@ -129,11 +103,6 @@ export function useTripData() {
     setCurrentTripId(newTripId);
     setIsInitialLoad(true);
     navigate(`/trip/${newTripId}`, { replace: true });
-    
-    toast({
-      title: "Nova pescaria criada",
-      description: `Pescaria #${newTripId} iniciada!`,
-    });
     
     return {
       participants: [],
