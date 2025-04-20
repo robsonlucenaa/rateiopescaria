@@ -1,7 +1,8 @@
 
 import { useEffect } from "react";
 import { apiService } from "@/services/apiService";
-import { FishingTripData } from "@/types/fishingTrip";
+import { FishingTripData, Participant, Expense } from "@/types/fishingTrip";
+import { useToast } from "@/components/ui/use-toast";
 
 const SYNC_INTERVAL = 10000; // Verificar a cada 10 segundos
 
@@ -9,10 +10,10 @@ export function useSyncData(
   currentTripId: string,
   lastSyncTime: number,
   setLastSyncTime: (time: number) => void, 
-  setParticipants: (participants: any[]) => void, 
-  setExpenses: (expenses: any[]) => void
+  setParticipants: (participants: Participant[]) => void, 
+  setExpenses: (expenses: Expense[]) => void
 ) {
-  // Removed useToast hook
+  const { toast } = useToast();
   
   // Poll for updates regularly from the backend
   useEffect(() => {
@@ -24,11 +25,18 @@ export function useSyncData(
         
         if (hasUpdates && data) {
           console.log(`Found newer data when polling: `, data);
-          setParticipants(data.participants);
+          
+          // Process expenses to update participant paid amounts
+          const updatedParticipants = updateParticipantPaidAmounts(data.participants, data.expenses);
+          
+          setParticipants(updatedParticipants);
           setExpenses(data.expenses);
           setLastSyncTime(data.lastUpdated);
           
-          // Removed toast notification
+          toast({
+            title: "Dados atualizados",
+            description: "Os dados da pescaria foram atualizados.",
+          });
         }
       } catch (error) {
         console.error("Error checking for updates:", error);
@@ -37,12 +45,34 @@ export function useSyncData(
 
     const pollInterval = setInterval(checkForUpdates, SYNC_INTERVAL);
     return () => clearInterval(pollInterval);
-  }, [currentTripId, lastSyncTime, setParticipants, setExpenses, setLastSyncTime]);
+  }, [currentTripId, lastSyncTime, setParticipants, setExpenses, setLastSyncTime, toast]);
+
+  // Helper function to update participant paid amounts based on expenses
+  const updateParticipantPaidAmounts = (participants: Participant[], expenses: Expense[]): Participant[] => {
+    const paidAmounts = new Map<string, number>();
+    
+    // Initialize with zero
+    participants.forEach(p => {
+      paidAmounts.set(p.id, 0);
+    });
+    
+    // Sum up expenses by participant
+    expenses.forEach(expense => {
+      const currentPaid = paidAmounts.get(expense.paidBy) || 0;
+      paidAmounts.set(expense.paidBy, currentPaid + expense.amount);
+    });
+    
+    // Update participant paid amounts
+    return participants.map(participant => ({
+      ...participant,
+      paid: paidAmounts.get(participant.id) || 0
+    }));
+  };
 
   const saveData = async (
     currentTripId: string, 
-    participants: any[], 
-    expenses: any[], 
+    participants: Participant[], 
+    expenses: Expense[], 
     isSaving: boolean,
     setIsSaving: (value: boolean) => void, 
     setLastDataUpdate: (value: number) => void
@@ -52,8 +82,11 @@ export function useSyncData(
     setIsSaving(true);
     console.log(`Saving trip data, participants: ${participants.length}, expenses: ${expenses.length}`);
     
+    // Update participant paid amounts before saving
+    const updatedParticipants = updateParticipantPaidAmounts(participants, expenses);
+    
     const dataToSave: FishingTripData = {
-      participants,
+      participants: updatedParticipants,
       expenses,
       lastUpdated: Date.now()
     };
@@ -62,10 +95,17 @@ export function useSyncData(
       await apiService.saveTrip(currentTripId, dataToSave);
       setLastDataUpdate(dataToSave.lastUpdated);
       
-      // Removed toast notification for successful save
+      toast({
+        title: "Dados salvos",
+        description: "Os dados da pescaria foram salvos com sucesso.",
+      });
     } catch (error) {
       console.error("Error saving trip data:", error);
-      // Removed error toast notification
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar os dados da pescaria.",
+        variant: "destructive"
+      });
     } finally {
       setIsSaving(false);
     }

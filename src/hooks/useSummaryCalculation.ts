@@ -16,16 +16,41 @@ interface PaymentSuggestion {
 export function useSummaryCalculation(participants: Participant[], expenses: Expense[], amountPerPerson: number) {
   // Calculate initial balances
   const participantBalances = useMemo(() => {
+    // First, calculate how much each participant has paid through expenses
+    const paidAmounts = new Map<string, number>();
+    
+    // Initialize with zero for all participants
+    participants.forEach(p => {
+      paidAmounts.set(p.id, 0);
+    });
+    
+    // Add up expenses paid by each participant
+    expenses.forEach(expense => {
+      const currentPaid = paidAmounts.get(expense.paidBy) || 0;
+      paidAmounts.set(expense.paidBy, currentPaid + expense.amount);
+    });
+    
+    // Calculate balance for each participant
     return participants.map((participant) => {
-      // Balance = what they paid minus what they should have paid
-      const balance = participant.paid - amountPerPerson;
-      return {
+      // Get actual amount paid from expenses
+      const paidAmount = paidAmounts.get(participant.id) || 0;
+      
+      // Update the participant's paid amount to reflect what was actually paid
+      const updatedParticipant = {
         ...participant,
+        paid: paidAmount
+      };
+      
+      // Balance = what they paid minus what they should have paid
+      const balance = paidAmount - amountPerPerson;
+      
+      return {
+        ...updatedParticipant,
         balance,
         status: balance >= 0 ? "positive" : "negative",
       } as ParticipantWithBalance;
     });
-  }, [participants, amountPerPerson]);
+  }, [participants, expenses, amountPerPerson]);
 
   // Sort participants by balance (negative first)
   const sortedParticipants = useMemo(() => {
