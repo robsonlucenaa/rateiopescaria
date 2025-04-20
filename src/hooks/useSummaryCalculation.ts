@@ -17,6 +17,7 @@ export function useSummaryCalculation(participants: Participant[], expenses: Exp
   // Calculate initial balances
   const participantBalances = useMemo(() => {
     return participants.map((participant) => {
+      // Balance = what they paid minus what they should have paid
       const balance = participant.paid - amountPerPerson;
       return {
         ...participant,
@@ -31,23 +32,23 @@ export function useSummaryCalculation(participants: Participant[], expenses: Exp
     return [...participantBalances].sort((a, b) => a.balance - b.balance);
   }, [participantBalances]);
 
-  // Generate payment suggestions based on algorithm provided
+  // Generate payment suggestions based on the algorithm
   const paymentSuggestions = useMemo(() => {
     const suggestions: PaymentSuggestion[] = [];
     
-    // Separate debtors and creditors
+    // Separate debtors (negative balance) and creditors (positive balance)
     const debtors = sortedParticipants
       .filter(p => p.balance < 0)
       .map(p => ({ 
         name: p.name, 
-        remainingDebt: Math.abs(p.balance)
+        remainingDebt: Math.abs(p.balance) // How much they still need to pay
       }));
     
     const creditors = sortedParticipants
       .filter(p => p.balance > 0)
       .map(p => ({ 
         name: p.name, 
-        remainingCredit: p.balance 
+        remainingCredit: p.balance // How much they still need to receive
       }));
 
     let debtorIndex = 0;
@@ -77,7 +78,7 @@ export function useSummaryCalculation(participants: Participant[], expenses: Exp
         currentCreditor.remainingCredit -= transferAmount;
       }
 
-      // Move to next person if their balance is settled
+      // Move to next person if their balance is settled (nearly zero)
       if (currentDebtor.remainingDebt < 0.01) {
         debtorIndex++;
       }
