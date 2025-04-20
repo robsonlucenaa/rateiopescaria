@@ -14,6 +14,7 @@ interface PaymentSuggestion {
 }
 
 export function useSummaryCalculation(participants: Participant[], expenses: Expense[], amountPerPerson: number) {
+  // Calculate initial balances
   const participantBalances = useMemo(() => {
     return participants.map((participant) => {
       const balance = participant.paid - amountPerPerson;
@@ -25,7 +26,7 @@ export function useSummaryCalculation(participants: Participant[], expenses: Exp
     });
   }, [participants, amountPerPerson]);
 
-  // Sort by balance (negative first)
+  // Sort participants by balance (negative first)
   const sortedParticipants = useMemo(() => {
     return [...participantBalances].sort((a, b) => a.balance - b.balance);
   }, [participantBalances]);
@@ -34,46 +35,54 @@ export function useSummaryCalculation(participants: Participant[], expenses: Exp
   const paymentSuggestions = useMemo(() => {
     const suggestions: PaymentSuggestion[] = [];
     
-    // Deep copy the participants to avoid mutating original data
+    // Separate debtors and creditors
     const debtors = sortedParticipants
       .filter(p => p.balance < 0)
-      .map(p => ({ ...p, remainingDebt: Math.abs(p.balance) }));
+      .map(p => ({ 
+        name: p.name, 
+        remainingDebt: Math.abs(p.balance)
+      }));
     
     const creditors = sortedParticipants
       .filter(p => p.balance > 0)
-      .map(p => ({ ...p, remainingCredit: p.balance }));
-    
-    let i = 0, j = 0;
-    // Continue until we've processed all debtors or creditors
-    while (i < debtors.length && j < creditors.length) {
-      const debtor = debtors[i];
-      const creditor = creditors[j];
-      
-      // Find the minimum amount that can be transferred
-      const transferAmount = Math.min(debtor.remainingDebt, creditor.remainingCredit);
-      
-      // Only create suggestion if there's an actual amount to pay
+      .map(p => ({ 
+        name: p.name, 
+        remainingCredit: p.balance 
+      }));
+
+    let debtorIndex = 0;
+    let creditorIndex = 0;
+
+    // Continue while there are still debtors and creditors to process
+    while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
+      const currentDebtor = debtors[debtorIndex];
+      const currentCreditor = creditors[creditorIndex];
+
+      // Calculate the transfer amount (minimum between debt and credit)
+      const transferAmount = Math.min(
+        currentDebtor.remainingDebt,
+        currentCreditor.remainingCredit
+      );
+
+      // Only create a suggestion if there's a significant amount to transfer
       if (transferAmount > 0.01) {
-        // Round to 2 decimal places to avoid floating point issues
-        const roundedAmount = Math.round(transferAmount * 100) / 100;
-        
         suggestions.push({
-          from: debtor.name,
-          to: creditor.name,
-          amount: roundedAmount
+          from: currentDebtor.name,
+          to: currentCreditor.name,
+          amount: Math.round(transferAmount * 100) / 100 // Round to 2 decimal places
         });
-        
-        // Update the remaining amounts
-        debtor.remainingDebt -= transferAmount;
-        creditor.remainingCredit -= transferAmount;
+
+        // Update remaining amounts
+        currentDebtor.remainingDebt -= transferAmount;
+        currentCreditor.remainingCredit -= transferAmount;
       }
-      
-      // Move to next person if their balance is nearly zero
-      if (debtor.remainingDebt < 0.01) {
-        i++;
+
+      // Move to next person if their balance is settled
+      if (currentDebtor.remainingDebt < 0.01) {
+        debtorIndex++;
       }
-      if (creditor.remainingCredit < 0.01) {
-        j++;
+      if (currentCreditor.remainingCredit < 0.01) {
+        creditorIndex++;
       }
     }
 
