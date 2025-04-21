@@ -58,8 +58,10 @@ export function useExpenses() {
     try {
       await apiService.saveTrip(currentTripId, dataToSave);
       setLastDataUpdate(dataToSave.lastUpdated);
+      // Removed toast notification
     } catch (error) {
       console.error("Error saving expense:", error);
+      // No additional notification
     } finally {
       setIsSaving(false);
     }
@@ -86,8 +88,10 @@ export function useExpenses() {
     try {
       await apiService.saveTrip(currentTripId, dataToSave);
       setLastDataUpdate(dataToSave.lastUpdated);
+      // Removed toast notification
     } catch (error) {
       console.error("Error removing expense:", error);
+      // No additional notification
     } finally {
       setIsSaving(false);
     }

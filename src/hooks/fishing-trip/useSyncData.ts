@@ -94,17 +94,10 @@ export function useSyncData(
       await apiService.saveTrip(currentTripId, dataToSave);
       setLastDataUpdate(dataToSave.lastUpdated);
       
-      toast({
-        title: "Dados salvos",
-        description: "Os dados da pescaria foram salvos com sucesso.",
-      });
+      // Removed toast notification
     } catch (error) {
       console.error("Error saving trip data:", error);
-      toast({
-        title: "Erro ao salvar",
-        description: "Não foi possível salvar os dados da pescaria.",
-        variant: "destructive"
-      });
+      // Removed toast notification
     } finally {
       setIsSaving(false);
     }
