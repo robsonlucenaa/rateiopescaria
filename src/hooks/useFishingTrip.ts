@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useTripData } from "./fishing-trip/useTripData";
 import { useSyncData } from "./fishing-trip/useSyncData";
@@ -11,6 +10,7 @@ import { FishingTripData } from "@/types/fishingTrip";
 import { useToast } from "@/components/ui/use-toast";
 
 export function useFishingTrip() {
+  // Remove useToast hook since we're removing all toasts
   const { toast } = useToast();
   
   // Combine all our smaller hooks
@@ -77,6 +77,7 @@ export function useFishingTrip() {
           }
         } catch (error) {
           console.error("Falha ao carregar dados iniciais:", error);
+          // Removed toast notification
           toast({
             title: "Erro ao carregar",
             description: "Não foi possível carregar os dados da pescaria.",

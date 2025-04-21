@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { apiService } from "@/services/apiService";
 import { FishingTripData, Participant, Expense } from "@/types/fishingTrip";
