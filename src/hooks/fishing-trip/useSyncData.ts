@@ -32,10 +32,7 @@ export function useSyncData(
           setExpenses(data.expenses);
           setLastSyncTime(data.lastUpdated);
           
-          toast({
-            title: "Dados atualizados",
-            description: "Os dados da pescaria foram atualizados.",
-          });
+          // Removed toast notification
         }
       } catch (error) {
         console.error("Error checking for updates:", error);
@@ -44,7 +41,7 @@ export function useSyncData(
 
     const pollInterval = setInterval(checkForUpdates, SYNC_INTERVAL);
     return () => clearInterval(pollInterval);
-  }, [currentTripId, lastSyncTime, setParticipants, setExpenses, setLastSyncTime, toast]);
+  }, [currentTripId, lastSyncTime, setParticipants, setExpenses, setLastSyncTime]);
 
   // Helper function to update participant paid amounts based on expenses
   const updateParticipantPaidAmounts = (participants: Participant[], expenses: Expense[]): Participant[] => {

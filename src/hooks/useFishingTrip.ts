@@ -7,11 +7,9 @@ import { useSummary } from "./fishing-trip/useSummary";
 import { useShareLink } from "./fishing-trip/useShareLink";
 import { useTabNavigation } from "./fishing-trip/useTabNavigation";
 import { FishingTripData } from "@/types/fishingTrip";
-import { useToast } from "@/components/ui/use-toast";
 
 export function useFishingTrip() {
-  // Remove useToast hook since we're removing all toasts
-  const { toast } = useToast();
+  // Remove useToast hook
   
   // Combine all our smaller hooks
   const {
@@ -78,11 +76,6 @@ export function useFishingTrip() {
         } catch (error) {
           console.error("Falha ao carregar dados iniciais:", error);
           // Removed toast notification
-          toast({
-            title: "Erro ao carregar",
-            description: "Não foi possível carregar os dados da pescaria.",
-            variant: "destructive",
-          });
         }
       }
     };
