@@ -46,7 +46,7 @@ export function useTripData() {
 
   // Function to load trip data from backend
   const loadTripData = async (id: string) => {
-    console.log(`Tentando carregar dados da pescaria ID: ${id}`);
+    if (import.meta.env.DEV) console.log(`Tentando carregar dados da pescaria ID: ${id}`);
     try {
       const tripData = await apiService.fetchTrip(id);
       
