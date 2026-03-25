@@ -68,7 +68,7 @@ export function useTripData() {
         // Salvar a nova pescaria no banco de dados
         try {
           await apiService.saveTrip(id, newTripData);
-          console.log(`Nova pescaria criada e salva com ID: ${id}`);
+          if (import.meta.env.DEV) console.log('Nova pescaria criada e salva');
         } catch (saveError) {
           console.error(`Erro ao salvar nova pescaria: ${saveError}`);
         }
