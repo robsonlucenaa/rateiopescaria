@@ -51,7 +51,7 @@ export function useTripData() {
       const tripData = await apiService.fetchTrip(id);
       
       if (tripData) {
-        console.log(`Dados carregados para ID: ${id}`, tripData);
+        if (import.meta.env.DEV) console.log(`Dados carregados para ID: ${id}`);
         setLastSyncTime(tripData.lastUpdated || Date.now());
         setLastDataUpdate(tripData.lastUpdated || Date.now());
         
