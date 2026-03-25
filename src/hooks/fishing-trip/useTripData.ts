@@ -35,7 +35,7 @@ export function useTripData() {
         await loadTripData(tripId);
       } else {
         const newTripId = generateTripId();
-        console.log(`Criando nova pescaria com ID: ${newTripId}`);
+        if (import.meta.env.DEV) console.log(`Criando nova pescaria com ID: ${newTripId}`);
         setCurrentTripId(newTripId);
         navigate(`/trip/${newTripId}`, { replace: true });
       }
