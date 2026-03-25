@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { apiService } from "@/services/apiService";
 import { FishingTripData, Participant, Expense } from "@/types/fishingTrip";
-import { useToast } from "@/components/ui/use-toast";
 
 const SYNC_INTERVAL = 10000; // Verificar a cada 10 segundos
 
