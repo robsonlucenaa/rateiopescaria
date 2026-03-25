@@ -70,7 +70,7 @@ export function useTripData() {
           await apiService.saveTrip(id, newTripData);
           if (import.meta.env.DEV) console.log('Nova pescaria criada e salva');
         } catch (saveError) {
-          console.error(`Erro ao salvar nova pescaria: ${saveError}`);
+          if (import.meta.env.DEV) console.error('Erro ao salvar nova pescaria:', saveError);
         }
         
         return newTripData;
