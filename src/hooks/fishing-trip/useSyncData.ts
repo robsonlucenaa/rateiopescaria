@@ -11,7 +11,7 @@ export function useSyncData(
   setParticipants: (participants: Participant[]) => void, 
   setExpenses: (expenses: Expense[]) => void
 ) {
-  const { toast } = useToast();
+  
   
   // Poll for updates regularly from the backend
   useEffect(() => {
