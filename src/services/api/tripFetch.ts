@@ -27,7 +27,7 @@ export const fetchTrip = async (tripId: string): Promise<FishingTripData | null>
         logDebug(`Pescaria ${normalizedId} não encontrada`);
         return null;
       }
-      console.error(`Erro ao buscar pescaria ${normalizedId}:`, error);
+      if (import.meta.env.DEV) console.error('Erro ao buscar pescaria:', error);
       return null;
     }
     
