@@ -30,7 +30,7 @@ export function useTripData() {
   useEffect(() => {
     const setupTrip = async () => {
       if (tripId) {
-        console.log(`Configurando pescaria com ID: ${tripId}`);
+        if (import.meta.env.DEV) console.log(`Configurando pescaria com ID: ${tripId}`);
         setCurrentTripId(tripId);
         await loadTripData(tripId);
       } else {
