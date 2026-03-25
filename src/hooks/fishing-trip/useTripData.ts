@@ -30,12 +30,12 @@ export function useTripData() {
   useEffect(() => {
     const setupTrip = async () => {
       if (tripId) {
-        console.log(`Configurando pescaria com ID: ${tripId}`);
+        if (import.meta.env.DEV) console.log(`Configurando pescaria com ID: ${tripId}`);
         setCurrentTripId(tripId);
         await loadTripData(tripId);
       } else {
         const newTripId = generateTripId();
-        console.log(`Criando nova pescaria com ID: ${newTripId}`);
+        if (import.meta.env.DEV) console.log(`Criando nova pescaria com ID: ${newTripId}`);
         setCurrentTripId(newTripId);
         navigate(`/trip/${newTripId}`, { replace: true });
       }
@@ -46,18 +46,18 @@ export function useTripData() {
 
   // Function to load trip data from backend
   const loadTripData = async (id: string) => {
-    console.log(`Tentando carregar dados da pescaria ID: ${id}`);
+    if (import.meta.env.DEV) console.log(`Tentando carregar dados da pescaria ID: ${id}`);
     try {
       const tripData = await apiService.fetchTrip(id);
       
       if (tripData) {
-        console.log(`Dados carregados para ID: ${id}`, tripData);
+        if (import.meta.env.DEV) console.log(`Dados carregados para ID: ${id}`);
         setLastSyncTime(tripData.lastUpdated || Date.now());
         setLastDataUpdate(tripData.lastUpdated || Date.now());
         
         return tripData;
       } else {
-        console.log(`Nenhum dado encontrado para ID: ${id}, criando nova pescaria`);
+        if (import.meta.env.DEV) console.log(`Nenhum dado encontrado, criando nova pescaria`);
         // If no data exists yet, create an empty trip
         const newTripData: FishingTripData = { 
           participants: [], 
@@ -68,15 +68,15 @@ export function useTripData() {
         // Salvar a nova pescaria no banco de dados
         try {
           await apiService.saveTrip(id, newTripData);
-          console.log(`Nova pescaria criada e salva com ID: ${id}`);
+          if (import.meta.env.DEV) console.log('Nova pescaria criada e salva');
         } catch (saveError) {
-          console.error(`Erro ao salvar nova pescaria: ${saveError}`);
+          if (import.meta.env.DEV) console.error('Erro ao salvar nova pescaria:', saveError);
         }
         
         return newTripData;
       }
     } catch (error) {
-      console.error("Erro ao carregar dados da pescaria:", error);
+      if (import.meta.env.DEV) console.error('Erro ao carregar dados da pescaria:', error);
       return null;
     }
   };
@@ -89,7 +89,7 @@ export function useTripData() {
         const tripData = await loadTripData(currentTripId);
         return tripData;
       } catch (error) {
-        console.error("Error refreshing data:", error);
+        if (import.meta.env.DEV) console.error('Error refreshing data:', error);
         return null;
       } finally {
         setTimeout(() => setIsRefreshing(false), 1000);
