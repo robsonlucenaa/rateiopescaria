@@ -34,8 +34,8 @@ export const saveTrip = async (tripId: string, data: FishingTripData): Promise<v
       });
     
     if (upsertError) {
-      console.error(`Erro ao salvar pescaria ${normalizedId}:`, upsertError);
-      throw new Error(`Falha ao salvar dados da pescaria: ${upsertError.message}`);
+      if (import.meta.env.DEV) console.error(`Erro ao salvar pescaria:`, upsertError);
+      throw new Error('Falha ao salvar dados da pescaria.');
     }
     
     logDebug(`Pescaria ${normalizedId} salva com sucesso`);
