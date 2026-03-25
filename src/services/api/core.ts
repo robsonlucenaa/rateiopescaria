@@ -5,7 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Função de log para depuração
 export const logDebug = (message: string, data?: any) => {
-  console.log(`[ApiService] ${message}`, data || '');
+  if (import.meta.env.DEV) {
+    console.log(`[ApiService] ${message}`, data || '');
+  }
 };
 
 // Prefixo atualizado para corresponder ao nome da tabela no Supabase

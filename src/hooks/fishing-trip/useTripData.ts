@@ -89,7 +89,7 @@ export function useTripData() {
         const tripData = await loadTripData(currentTripId);
         return tripData;
       } catch (error) {
-        console.error("Error refreshing data:", error);
+        if (import.meta.env.DEV) console.error('Error refreshing data:', error);
         return null;
       } finally {
         setTimeout(() => setIsRefreshing(false), 1000);

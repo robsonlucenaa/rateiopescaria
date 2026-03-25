@@ -40,7 +40,7 @@ export const saveTrip = async (tripId: string, data: FishingTripData): Promise<v
     
     logDebug(`Pescaria ${normalizedId} salva com sucesso`);
   } catch (error) {
-    console.error("Erro ao salvar pescaria:", error);
+    if (import.meta.env.DEV) console.error('Erro ao salvar pescaria:', error);
     throw error;
   }
 };

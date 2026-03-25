@@ -45,7 +45,7 @@ export const fetchTrip = async (tripId: string): Promise<FishingTripData | null>
     
     return tripData;
   } catch (error) {
-    console.error("Erro ao buscar pescaria:", error);
-    throw new Error("Falha ao buscar dados da pescaria");
+    if (import.meta.env.DEV) console.error('Erro ao buscar pescaria:', error);
+    throw new Error('Falha ao buscar dados da pescaria');
   }
 };
