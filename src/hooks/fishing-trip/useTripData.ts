@@ -76,7 +76,7 @@ export function useTripData() {
         return newTripData;
       }
     } catch (error) {
-      console.error("Erro ao carregar dados da pescaria:", error);
+      if (import.meta.env.DEV) console.error('Erro ao carregar dados da pescaria:', error);
       return null;
     }
   };
