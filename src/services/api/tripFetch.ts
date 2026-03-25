@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FishingTripData } from "@/types/fishingTrip";
 import { logDebug, STORAGE_PREFIX } from "./core";
 
-// Buscar uma pescaria por ID
+// Buscar uma pescaria por ID (RLS already filters by user)
 export const fetchTrip = async (tripId: string): Promise<FishingTripData | null> => {
   try {
     if (!tripId) {
@@ -13,10 +13,8 @@ export const fetchTrip = async (tripId: string): Promise<FishingTripData | null>
       return null;
     }
     
-    // Normaliza o ID para garantir consistência
     const normalizedId = tripId.replace(STORAGE_PREFIX, "");
-    
-    logDebug(`Buscando pescaria com ID: ${normalizedId} do Supabase`);
+    logDebug(`Buscando pescaria com ID: ${normalizedId}`);
     
     const { data, error } = await supabase
       .from('fishing_trips')
@@ -25,31 +23,23 @@ export const fetchTrip = async (tripId: string): Promise<FishingTripData | null>
       .single();
     
     if (error) {
-      // Se o erro for "no rows returned", podemos criar uma nova pescaria
       if (error.code === 'PGRST116') {
-        logDebug(`Pescaria ${normalizedId} não encontrada no banco de dados`);
+        logDebug(`Pescaria ${normalizedId} não encontrada`);
         return null;
       }
-      
       console.error(`Erro ao buscar pescaria ${normalizedId}:`, error);
       return null;
     }
     
-    if (!data) {
-      logDebug(`Pescaria ${normalizedId} não encontrada no banco de dados`);
-      return null;
-    }
+    if (!data) return null;
     
-    // Cast data to the correct type using as and type assertion
     const tripData = data.data as unknown as FishingTripData;
     
-    logDebug(`Pescaria ${normalizedId} encontrada com sucesso:`, {
+    logDebug(`Pescaria ${normalizedId} encontrada:`, {
       participantes: tripData.participants?.length || 0,
       despesas: tripData.expenses?.length || 0,
-      ultimaAtualizacao: new Date(tripData.lastUpdated).toISOString()
     });
     
-    // Verifica a integridade dos dados
     if (!tripData.participants) tripData.participants = [];
     if (!tripData.expenses) tripData.expenses = [];
     

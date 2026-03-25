@@ -1,14 +1,13 @@
 
-// Serviço para listar pescarias
+// Serviço para listar pescarias (RLS filters by user automatically)
 
 import { supabase } from "@/integrations/supabase/client";
 import { FishingTripData } from "@/types/fishingTrip";
 import { logDebug } from "./core";
 
-// Listar todas as pescarias
 export const getAllTrips = async (): Promise<{ id: string; lastUpdated: number; participants: number }[]> => {
   try {
-    logDebug(`Buscando todas as pescarias do Supabase...`);
+    logDebug(`Buscando pescarias do usuário...`);
     
     const { data, error } = await supabase
       .from('fishing_trips')
@@ -21,12 +20,11 @@ export const getAllTrips = async (): Promise<{ id: string; lastUpdated: number; 
     }
     
     if (!data || data.length === 0) {
-      logDebug('Nenhuma pescaria encontrada no banco de dados.');
+      logDebug('Nenhuma pescaria encontrada.');
       return [];
     }
     
     const trips = data.map(trip => {
-      // Cast data to the correct type using as and type assertion
       const tripData = trip.data as unknown as FishingTripData;
       return {
         id: trip.id,

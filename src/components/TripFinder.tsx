@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { DialogHeader, DialogFooter, DialogTitle, DialogDescription, Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { History, Search } from "lucide-react";
 import { apiService } from "@/services/apiService";
+import { TripIdSchema } from "@/lib/validation";
 
 interface Trip {
   id: string;
@@ -24,11 +25,10 @@ const TripFinder = () => {
 
   const openDialog = async () => {
     setIsOpen(true);
-    // Carrega as pescarias recentes quando o diálogo é aberto
     setIsLoading(true);
     try {
       const trips = await apiService.getAllTrips();
-      setRecentTrips(trips.slice(0, 5)); // Exibe apenas as 5 mais recentes
+      setRecentTrips(trips.slice(0, 5));
     } catch (error) {
       console.error("Erro ao carregar pescarias recentes:", error);
     } finally {
@@ -37,16 +37,19 @@ const TripFinder = () => {
   };
 
   const findTrip = () => {
-    if (!tripId.trim()) {
+    const normalizedId = tripId.trim().toUpperCase();
+    const result = TripIdSchema.safeParse(normalizedId);
+    
+    if (!result.success) {
       toast({
-        title: "ID necessário",
-        description: "Por favor, insira o ID da pescaria.",
+        title: "ID inválido",
+        description: "O ID da pescaria deve ter 4 caracteres alfanuméricos (A-Z, 0-9).",
         variant: "destructive",
       });
       return;
     }
 
-    navigate(`/trip/${tripId}`);
+    navigate(`/trip/${result.data}`);
     setIsOpen(false);
   };
 
@@ -84,8 +87,9 @@ const TripFinder = () => {
             <Input
               value={tripId}
               onChange={(e) => setTripId(e.target.value)}
-              placeholder="ID da pescaria"
+              placeholder="ID da pescaria (ex: AB12)"
               className="flex-1"
+              maxLength={4}
             />
             <Button onClick={findTrip} type="submit">
               <Search className="w-4 h-4 mr-2" />
@@ -99,7 +103,7 @@ const TripFinder = () => {
             <>
               {recentTrips.length > 0 ? (
                 <>
-                  <h4 className="font-medium text-sm mb-2">Pescarias Recentes</h4>
+                  <h4 className="font-medium text-sm mb-2">Suas Pescarias Recentes</h4>
                   <div className="space-y-2">
                     {recentTrips.map((trip) => (
                       <Button
