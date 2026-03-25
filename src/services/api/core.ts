@@ -11,8 +11,9 @@ export const logDebug = (message: string, data?: any) => {
 // Prefixo atualizado para corresponder ao nome da tabela no Supabase
 export const STORAGE_PREFIX = "fishing_trips";
 
-// Função para simular latência de rede (para uma experiência de usuário mais suave)
-export const simulateNetworkLatency = async (ms: number = 300): Promise<void> => {
-  return new Promise(resolve => setTimeout(resolve, ms));
+// Get the current authenticated user's ID
+export const getCurrentUserId = async (): Promise<string> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado");
+  return user.id;
 };
-

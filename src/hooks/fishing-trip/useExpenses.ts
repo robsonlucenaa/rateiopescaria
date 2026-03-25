@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Expense } from "@/types/fishingTrip";
 import { apiService } from "@/services/apiService";
+import { ExpenseSchema } from "@/lib/validation";
 
 export function useExpenses() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -15,12 +16,14 @@ export function useExpenses() {
     setIsSaving: (value: boolean) => void,
     setLastDataUpdate: (value: number) => void
   ) => {
-    if (!newExpenseDescription.trim()) {
-      return;
-    }
-
     const amount = parseFloat(newExpenseAmount);
-    if (isNaN(amount) || amount <= 0) {
+    
+    const result = ExpenseSchema.safeParse({
+      description: newExpenseDescription,
+      amount: isNaN(amount) ? 0 : amount,
+    });
+    
+    if (!result.success) {
       return;
     }
 
@@ -35,8 +38,8 @@ export function useExpenses() {
 
     const newExpense = {
       id: Date.now().toString(),
-      description: newExpenseDescription,
-      amount,
+      description: result.data.description,
+      amount: result.data.amount,
       paidBy: newExpensePaidBy,
       paidByName: payer.name
     };
@@ -47,7 +50,6 @@ export function useExpenses() {
     setNewExpenseDescription("");
     setNewExpenseAmount("");
     
-    // Force immediate save to backend
     setIsSaving(true);
     const dataToSave = {
       participants,
@@ -58,10 +60,8 @@ export function useExpenses() {
     try {
       await apiService.saveTrip(currentTripId, dataToSave);
       setLastDataUpdate(dataToSave.lastUpdated);
-      // Removed toast notification
     } catch (error) {
       console.error("Error saving expense:", error);
-      // No additional notification
     } finally {
       setIsSaving(false);
     }
@@ -77,7 +77,6 @@ export function useExpenses() {
     const updatedExpenses = expenses.filter((e) => e.id !== id);
     setExpenses(updatedExpenses);
     
-    // Force immediate save to backend
     setIsSaving(true);
     const dataToSave = {
       participants,
@@ -88,10 +87,8 @@ export function useExpenses() {
     try {
       await apiService.saveTrip(currentTripId, dataToSave);
       setLastDataUpdate(dataToSave.lastUpdated);
-      // Removed toast notification
     } catch (error) {
       console.error("Error removing expense:", error);
-      // No additional notification
     } finally {
       setIsSaving(false);
     }

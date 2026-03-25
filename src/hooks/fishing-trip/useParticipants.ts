@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { Participant } from "@/types/fishingTrip";
+import { ParticipantNameSchema } from "@/lib/validation";
 
 export function useParticipants() {
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -8,26 +9,24 @@ export function useParticipants() {
   const [newParticipantPaid, setNewParticipantPaid] = useState("");
 
   const addParticipant = () => {
-    if (!newParticipantName.trim()) {
+    const result = ParticipantNameSchema.safeParse(newParticipantName);
+    if (!result.success) {
       return;
     }
 
     const newParticipant = {
       id: Date.now().toString(),
-      name: newParticipantName,
+      name: result.data,
       paid: 0,
     };
 
     setParticipants([...participants, newParticipant]);
-
     setNewParticipantName("");
     setNewParticipantPaid("");
   };
 
   const removeParticipant = (id: string, expenses: any[], setExpenses: (expenses: any[]) => void) => {
-    // Remove participant's expenses
     setExpenses(expenses.filter(expense => expense.paidBy !== id));
-    // Remove participant
     setParticipants(participants.filter((p) => p.id !== id));
   };
 
