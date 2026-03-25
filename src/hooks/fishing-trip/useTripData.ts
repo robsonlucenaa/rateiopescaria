@@ -57,7 +57,7 @@ export function useTripData() {
         
         return tripData;
       } else {
-        console.log(`Nenhum dado encontrado para ID: ${id}, criando nova pescaria`);
+        if (import.meta.env.DEV) console.log(`Nenhum dado encontrado, criando nova pescaria`);
         // If no data exists yet, create an empty trip
         const newTripData: FishingTripData = { 
           participants: [], 
