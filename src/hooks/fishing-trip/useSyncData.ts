@@ -22,7 +22,7 @@ export function useSyncData(
         const { hasUpdates, data } = await apiService.checkForUpdates(currentTripId, lastSyncTime);
         
         if (hasUpdates && data) {
-          console.log(`Found newer data when polling: `, data);
+          if (import.meta.env.DEV) console.log(`Found newer data when polling: `, data);
           
           // Process expenses to update participant paid amounts
           const updatedParticipants = updateParticipantPaidAmounts(data.participants, data.expenses);
@@ -34,7 +34,7 @@ export function useSyncData(
           // Removed toast notification
         }
       } catch (error) {
-        console.error("Error checking for updates:", error);
+        if (import.meta.env.DEV) console.error("Error checking for updates:", error);
       }
     };
 
@@ -75,7 +75,7 @@ export function useSyncData(
     if (!currentTripId || isSaving) return;
     
     setIsSaving(true);
-    console.log(`Saving trip data, participants: ${participants.length}, expenses: ${expenses.length}`);
+    if (import.meta.env.DEV) console.log(`Saving trip data, participants: ${participants.length}, expenses: ${expenses.length}`);
     
     // Update participant paid amounts before saving
     const updatedParticipants = updateParticipantPaidAmounts(participants, expenses);
@@ -92,7 +92,7 @@ export function useSyncData(
       
       // Removed toast notification
     } catch (error) {
-      console.error("Error saving trip data:", error);
+      if (import.meta.env.DEV) console.error("Error saving trip data:", error);
       // Removed toast notification
     } finally {
       setIsSaving(false);
