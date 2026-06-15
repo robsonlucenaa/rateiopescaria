@@ -30,7 +30,7 @@ const TripFinder = () => {
       const trips = await apiService.getAllTrips();
       setRecentTrips(trips.slice(0, 5));
     } catch (error) {
-      console.error("Erro ao carregar pescarias recentes:", error);
+      if (import.meta.env.DEV) console.error("Erro ao carregar pescarias recentes:", error);
     } finally {
       setIsLoading(false);
     }
