@@ -15,7 +15,7 @@ export const getAllTrips = async (): Promise<{ id: string; lastUpdated: number; 
       .order('last_updated', { ascending: false });
     
     if (error) {
-      console.error("Erro ao buscar pescarias:", error);
+      if (import.meta.env.DEV) console.error("Erro ao buscar pescarias:", error);
       return [];
     }
     
@@ -36,7 +36,7 @@ export const getAllTrips = async (): Promise<{ id: string; lastUpdated: number; 
     logDebug(`Encontradas ${trips.length} pescarias`);
     return trips;
   } catch (error) {
-    console.error("Erro ao listar pescarias:", error);
+    if (import.meta.env.DEV) console.error("Erro ao listar pescarias:", error);
     return [];
   }
 };
