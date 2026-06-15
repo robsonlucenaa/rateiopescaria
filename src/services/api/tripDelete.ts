@@ -20,13 +20,13 @@ export const deleteTrip = async (tripId: string): Promise<void> => {
       .eq('id', normalizedId);
     
     if (error) {
-      console.error(`Erro ao excluir pescaria ${normalizedId}:`, error);
+      if (import.meta.env.DEV) console.error(`Erro ao excluir pescaria ${normalizedId}:`, error);
       throw new Error("Falha ao excluir dados da pescaria");
     }
     
     logDebug(`Pescaria ${normalizedId} excluída com sucesso`);
   } catch (error) {
-    console.error("Erro ao excluir pescaria:", error);
+    if (import.meta.env.DEV) console.error("Erro ao excluir pescaria:", error);
     throw new Error("Falha ao excluir dados da pescaria");
   }
 };

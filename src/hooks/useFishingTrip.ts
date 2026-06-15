@@ -74,7 +74,7 @@ export function useFishingTrip() {
             setIsInitialLoad(false);
           }
         } catch (error) {
-          console.error("Falha ao carregar dados iniciais:", error);
+          if (import.meta.env.DEV) console.error("Falha ao carregar dados iniciais:", error);
           // Removed toast notification
         }
       }
