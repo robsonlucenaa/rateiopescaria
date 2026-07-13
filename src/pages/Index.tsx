@@ -2,15 +2,12 @@
 import React, { useEffect } from "react";
 import ExpenseSplitter from "@/components/ExpenseSplitter";
 import TripFinder from "@/components/TripFinder";
-import { Fish, LogOut } from "lucide-react";
+import { Fish } from "lucide-react";
 import { useParams } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const { tripId } = useParams();
-  const { signOut, user } = useAuth();
-  
+
   useEffect(() => {
     if (tripId) {
       document.title = `Pescaria #${tripId} - Rateio de Pescaria`;
@@ -29,16 +26,9 @@ const Index = () => {
           <Fish className="h-7 w-7 text-primary" />
           Rateio de Pescaria
         </h1>
-        <p className="text-muted-foreground max-w-lg mx-auto mb-6 text-sm">
-          {user?.email}
-        </p>
-        
+
         <div className="flex justify-center gap-2">
           <TripFinder />
-          <Button variant="outline" onClick={signOut} className="flex items-center space-x-1">
-            <LogOut className="w-4 h-4" />
-            <span>Sair</span>
-          </Button>
         </div>
       </div>
       
