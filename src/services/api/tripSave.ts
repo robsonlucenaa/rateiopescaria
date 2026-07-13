@@ -3,7 +3,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { FishingTripData } from "@/types/fishingTrip";
-import { logDebug, STORAGE_PREFIX, getCurrentUserId } from "./core";
+import { logDebug, STORAGE_PREFIX } from "./core";
 
 // Salvar uma pescaria
 export const saveTrip = async (tripId: string, data: FishingTripData): Promise<void> => {
@@ -12,7 +12,6 @@ export const saveTrip = async (tripId: string, data: FishingTripData): Promise<v
       throw new Error("ID da pescaria é necessário para salvar");
     }
     
-    const userId = await getCurrentUserId();
     const normalizedId = tripId.replace(STORAGE_PREFIX, "");
     
     if (!data.participants) data.participants = [];
@@ -28,7 +27,6 @@ export const saveTrip = async (tripId: string, data: FishingTripData): Promise<v
       .from('fishing_trips')
       .upsert({
         id: normalizedId,
-        user_id: userId,
         data: data as any,
         last_updated: new Date().toISOString()
       });
