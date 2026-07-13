@@ -64,8 +64,13 @@ export function useFishingTrip() {
         try {
           const tripData = await loadTripData(currentTripId);
           if (tripData) {
-            setParticipants(tripData.participants || []);
-            setExpenses(tripData.expenses || []);
+            // Não sobrescreve alterações locais feitas enquanto o load inicial acontecia
+            setParticipants((prev) =>
+              prev.length > 0 ? prev : tripData.participants || []
+            );
+            setExpenses((prev) =>
+              prev.length > 0 ? prev : tripData.expenses || []
+            );
             updateActiveTabBasedOnData(
               tripData.participants || [], 
               tripData.expenses || [], 
