@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import ExpenseSplitter from "@/components/ExpenseSplitter";
 import TripFinder from "@/components/TripFinder";
-import { Fish } from "lucide-react";
+import { Fish, Mail, MessageCircle } from "lucide-react";
 import { useParams } from "react-router-dom";
 
 const Index = () => {
@@ -35,6 +35,24 @@ const Index = () => {
       <ExpenseSplitter />
       
       <footer className="mt-20 text-center text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+          <a
+            href="mailto:lunapp.br@gmail.com?subject=D%C3%BAvidas%20sobre%20o%20Rateio%20de%20Pescaria"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-xl button-effect text-sm"
+          >
+            <Mail className="h-4 w-4" />
+            Enviar e-mail
+          </a>
+          <a
+            href="https://wa.me/5562981318591?text=Ol%C3%A1!%20Tenho%20uma%20d%C3%BAvida%20ou%20sugest%C3%A3o%20sobre%20o%20Rateio%20de%20Pescaria"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-xl button-effect text-sm"
+          >
+            <MessageCircle className="h-4 w-4" />
+            Falar no WhatsApp
+          </a>
+        </div>
         <p>
           Desenvolvido por Lucena Solutions
         </p>
