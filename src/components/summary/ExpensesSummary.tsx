@@ -1,14 +1,15 @@
 
 import React from "react";
-import { Expense } from "@/types/fishingTrip";
+import { Expense, Participant } from "@/types/fishingTrip";
 
 interface ExpensesSummaryProps {
   expenses: Expense[];
+  participants: Participant[];
   totalAmount: number;
   formatCurrency: (value: number) => string;
 }
 
-const ExpensesSummary = ({ expenses, totalAmount, formatCurrency }: ExpensesSummaryProps) => {
+const ExpensesSummary = ({ expenses, participants, totalAmount, formatCurrency }: ExpensesSummaryProps) => {
   return (
     <div className="bg-secondary/50 p-4 rounded-xl">
       <h3 className="text-sm text-muted-foreground mb-2">Total de despesas:</h3>
@@ -25,6 +26,14 @@ const ExpensesSummary = ({ expenses, totalAmount, formatCurrency }: ExpensesSumm
               </span>
               <div className="text-xs text-muted-foreground">
                 Pago por: {expense.paidByName}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Rateio: {expense.participantIds
+                  ? participants
+                      .filter((participant) => expense.participantIds?.includes(participant.id))
+                      .map((participant) => participant.name)
+                      .join(", ")
+                  : "Todos"}
               </div>
             </div>
           </div>

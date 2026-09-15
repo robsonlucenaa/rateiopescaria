@@ -33,6 +33,7 @@ const SummaryCard = ({
       <div>
         <ExpensesSummary 
           expenses={expenses}
+          participants={participants}
           totalAmount={totalAmount}
           formatCurrency={formatCurrency}
         />
