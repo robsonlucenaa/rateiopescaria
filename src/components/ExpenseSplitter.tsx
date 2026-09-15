@@ -107,7 +107,6 @@ const ExpenseSplitter = () => {
             participants={participants}
             expenses={expenses}
             totalAmount={totalAmount}
-            amountPerPerson={amountPerPerson}
             formatCurrency={formatCurrency}
             onBack={() => setActiveTab("expenses")}
           />
