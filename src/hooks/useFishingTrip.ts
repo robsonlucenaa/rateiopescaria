@@ -48,8 +48,13 @@ export function useFishingTrip() {
     setNewExpenseAmount,
     newExpensePaidBy,
     setNewExpensePaidBy,
+    allParticipantsShare,
+    setAllParticipantsShare,
+    newExpenseParticipantIds,
+    setNewExpenseParticipantIds,
     addExpense: _addExpense,
-    removeExpense: _removeExpense
+    removeExpense: _removeExpense,
+    updateExpense: _updateExpense
   } = useExpenses();
 
   const { saveData } = useSyncData(currentTripId, lastSyncTime, setLastSyncTime, setParticipants, setExpenses);
@@ -128,6 +133,10 @@ export function useFishingTrip() {
     await _removeExpense(id, participants, currentTripId, setIsSaving, setLastDataUpdate);
   };
 
+  const updateExpense = async (expense: import("@/types/fishingTrip").Expense) => {
+    await _updateExpense(expense, participants, currentTripId, setIsSaving, setLastDataUpdate);
+  };
+
   const handleStartNewTrip = () => {
     const newTripData = startNewTrip();
     setParticipants(newTripData.participants);
@@ -147,6 +156,10 @@ export function useFishingTrip() {
     setNewExpenseAmount,
     newExpensePaidBy,
     setNewExpensePaidBy,
+    allParticipantsShare,
+    setAllParticipantsShare,
+    newExpenseParticipantIds,
+    setNewExpenseParticipantIds,
     activeTab,
     setActiveTab,
     totalAmount,
@@ -160,6 +173,7 @@ export function useFishingTrip() {
     removeParticipant,
     addExpense,
     removeExpense,
+    updateExpense,
     copyShareLink,
     startNewTrip: handleStartNewTrip,
     forceRefresh,

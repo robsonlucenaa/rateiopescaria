@@ -13,8 +13,13 @@ interface ExpensesTabProps {
   setNewExpenseAmount: (amount: string) => void;
   newExpensePaidBy: string;
   setNewExpensePaidBy: (paidBy: string) => void;
+  allParticipantsShare: boolean;
+  setAllParticipantsShare: (value: boolean) => void;
+  newExpenseParticipantIds: string[];
+  setNewExpenseParticipantIds: (ids: string[]) => void;
   addExpense: () => void;
   removeExpense: (id: string) => void;
+  updateExpense: (expense: Expense) => void;
   formatCurrency: (value: number) => string;
   onBack: () => void;
   onNext: () => void;
@@ -29,8 +34,13 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
   setNewExpenseAmount,
   newExpensePaidBy,
   setNewExpensePaidBy,
+  allParticipantsShare,
+  setAllParticipantsShare,
+  newExpenseParticipantIds,
+  setNewExpenseParticipantIds,
   addExpense,
   removeExpense,
+  updateExpense,
   formatCurrency,
   onBack,
   onNext
@@ -48,6 +58,10 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
         setNewExpenseAmount={setNewExpenseAmount}
         newExpensePaidBy={newExpensePaidBy}
         setNewExpensePaidBy={setNewExpensePaidBy}
+        allParticipantsShare={allParticipantsShare}
+        setAllParticipantsShare={setAllParticipantsShare}
+        participantIds={newExpenseParticipantIds}
+        setParticipantIds={setNewExpenseParticipantIds}
         participants={participants}
         addExpense={addExpense}
       />
@@ -57,7 +71,9 @@ const ExpensesTab: React.FC<ExpensesTabProps> = ({
           <ExpenseCard
             key={expense.id}
             expense={expense}
+            participants={participants}
             onRemove={removeExpense}
+            onUpdate={updateExpense}
             formatCurrency={formatCurrency}
           />
         ))}
