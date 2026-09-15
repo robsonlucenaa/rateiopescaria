@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Permitir escolher participantes por despesa ao adicionar e editar
-- [ ] Recalcular saldos usando a participação individual de cada despesa
-- [ ] Exibir claramente os participantes em cada despesa
-- [ ] Validar os fluxos no navegador
+- [x] Permitir escolher participantes por despesa ao adicionar e editar
+- [x] Recalcular saldos usando a participação individual de cada despesa
+- [x] Exibir claramente os participantes em cada despesa
+- [x] Validar os fluxos no navegador
