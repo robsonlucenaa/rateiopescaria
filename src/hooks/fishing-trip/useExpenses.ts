@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Expense } from "@/types/fishingTrip";
+import { Expense, Participant } from "@/types/fishingTrip";
 import { apiService } from "@/services/apiService";
 import { ExpenseSchema } from "@/lib/validation";
 
@@ -9,9 +9,11 @@ export function useExpenses() {
   const [newExpenseDescription, setNewExpenseDescription] = useState("");
   const [newExpenseAmount, setNewExpenseAmount] = useState("");
   const [newExpensePaidBy, setNewExpensePaidBy] = useState("");
+  const [allParticipantsShare, setAllParticipantsShare] = useState(true);
+  const [newExpenseParticipantIds, setNewExpenseParticipantIds] = useState<string[]>([]);
 
   const addExpense = async (
-    participants: any[], 
+    participants: Participant[], 
     currentTripId: string,
     setIsSaving: (value: boolean) => void,
     setLastDataUpdate: (value: number) => void
@@ -31,17 +33,22 @@ export function useExpenses() {
       return;
     }
 
+    if (!allParticipantsShare && newExpenseParticipantIds.length === 0) {
+      return;
+    }
+
     const payer = participants.find(p => p.id === newExpensePaidBy);
     if (!payer) {
       return;
     }
 
-    const newExpense = {
+    const newExpense: Expense = {
       id: Date.now().toString(),
       description: result.data.description,
       amount: result.data.amount,
       paidBy: newExpensePaidBy,
-      paidByName: payer.name
+      paidByName: payer.name,
+      participantIds: allParticipantsShare ? undefined : newExpenseParticipantIds
     };
 
     const updatedExpenses = [...expenses, newExpense];
@@ -49,6 +56,8 @@ export function useExpenses() {
 
     setNewExpenseDescription("");
     setNewExpenseAmount("");
+    setAllParticipantsShare(true);
+    setNewExpenseParticipantIds([]);
     
     setIsSaving(true);
     const dataToSave = {
@@ -61,7 +70,7 @@ export function useExpenses() {
       await apiService.saveTrip(currentTripId, dataToSave);
       setLastDataUpdate(dataToSave.lastUpdated);
     } catch (error) {
-      console.error("Error saving expense:", error);
+      if (import.meta.env.DEV) console.error("Error saving expense:", error);
     } finally {
       setIsSaving(false);
     }
@@ -69,7 +78,7 @@ export function useExpenses() {
 
   const removeExpense = async (
     id: string, 
-    participants: any[],
+    participants: Participant[],
     currentTripId: string,
     setIsSaving: (value: boolean) => void,
     setLastDataUpdate: (value: number) => void
@@ -88,7 +97,37 @@ export function useExpenses() {
       await apiService.saveTrip(currentTripId, dataToSave);
       setLastDataUpdate(dataToSave.lastUpdated);
     } catch (error) {
-      console.error("Error removing expense:", error);
+      if (import.meta.env.DEV) console.error("Error removing expense:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const updateExpense = async (
+    updatedExpense: Expense,
+    participants: Participant[],
+    currentTripId: string,
+    setIsSaving: (value: boolean) => void,
+    setLastDataUpdate: (value: number) => void
+  ) => {
+    const result = ExpenseSchema.safeParse(updatedExpense);
+    const payer = participants.find((participant) => participant.id === updatedExpense.paidBy);
+    if (!result.success || !payer || updatedExpense.participantIds?.length === 0) return;
+
+    const updatedExpenses = expenses.map((expense) =>
+      expense.id === updatedExpense.id
+        ? { ...updatedExpense, ...result.data, paidByName: payer.name }
+        : expense
+    );
+    setExpenses(updatedExpenses);
+    setIsSaving(true);
+    const dataToSave = { participants, expenses: updatedExpenses, lastUpdated: Date.now() };
+
+    try {
+      await apiService.saveTrip(currentTripId, dataToSave);
+      setLastDataUpdate(dataToSave.lastUpdated);
+    } catch (error) {
+      if (import.meta.env.DEV) console.error("Error updating expense:", error);
     } finally {
       setIsSaving(false);
     }
@@ -103,7 +142,12 @@ export function useExpenses() {
     setNewExpenseAmount,
     newExpensePaidBy,
     setNewExpensePaidBy,
+    allParticipantsShare,
+    setAllParticipantsShare,
+    newExpenseParticipantIds,
+    setNewExpenseParticipantIds,
     addExpense,
-    removeExpense
+    removeExpense,
+    updateExpense
   };
 }

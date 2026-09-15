@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { Participant, Expense } from "@/types/fishingTrip";
 
 interface ParticipantWithBalance extends Participant {
+  owed: number;
   balance: number;
   status: "positive" | "negative";
 }
@@ -13,27 +14,38 @@ interface PaymentSuggestion {
   amount: number;
 }
 
-export function useSummaryCalculation(participants: Participant[], expenses: Expense[], amountPerPerson: number) {
+export function useSummaryCalculation(participants: Participant[], expenses: Expense[]) {
   // Calculate initial balances
   const participantBalances = useMemo(() => {
     // First, calculate how much each participant has paid through expenses
     const paidAmounts = new Map<string, number>();
+    const owedAmounts = new Map<string, number>();
     
     // Initialize with zero for all participants
     participants.forEach(p => {
       paidAmounts.set(p.id, 0);
+      owedAmounts.set(p.id, 0);
     });
     
     // Add up expenses paid by each participant
     expenses.forEach(expense => {
       const currentPaid = paidAmounts.get(expense.paidBy) || 0;
       paidAmounts.set(expense.paidBy, currentPaid + expense.amount);
+
+      const selectedIds = expense.participantIds
+        ? expense.participantIds.filter((id) => owedAmounts.has(id))
+        : participants.map((participant) => participant.id);
+      if (selectedIds.length > 0) {
+        const share = expense.amount / selectedIds.length;
+        selectedIds.forEach((id) => owedAmounts.set(id, (owedAmounts.get(id) || 0) + share));
+      }
     });
     
     // Calculate balance for each participant
     return participants.map((participant) => {
       // Get actual amount paid from expenses
       const paidAmount = paidAmounts.get(participant.id) || 0;
+      const owedAmount = owedAmounts.get(participant.id) || 0;
       
       // Update the participant's paid amount to reflect what was actually paid
       const updatedParticipant = {
@@ -42,15 +54,16 @@ export function useSummaryCalculation(participants: Participant[], expenses: Exp
       };
       
       // Balance = what they paid minus what they should have paid
-      const balance = paidAmount - amountPerPerson;
+      const balance = paidAmount - owedAmount;
       
       return {
         ...updatedParticipant,
+        owed: owedAmount,
         balance,
         status: balance >= 0 ? "positive" : "negative",
       } as ParticipantWithBalance;
     });
-  }, [participants, expenses, amountPerPerson]);
+  }, [participants, expenses]);
 
   // Sort participants by balance (negative first)
   const sortedParticipants = useMemo(() => {

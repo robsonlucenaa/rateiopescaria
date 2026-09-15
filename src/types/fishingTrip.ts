@@ -13,6 +13,7 @@ export interface Expense {
   amount: number;
   paidBy: string; // ID of the participant who paid
   paidByName: string; // Name of the participant who paid
+  participantIds?: string[]; // Undefined means every participant shares this expense
 }
 
 export interface FishingTripData {

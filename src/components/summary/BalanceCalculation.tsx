@@ -7,19 +7,18 @@ interface ParticipantWithBalance {
   id: string;
   name: string;
   paid: number;
+  owed: number;
   balance: number;
   status: "positive" | "negative";
 }
 
 interface BalanceCalculationProps {
   participants: ParticipantWithBalance[];
-  amountPerPerson: number;
   formatCurrency: (value: number) => string;
 }
 
 const BalanceCalculation = ({ 
   participants, 
-  amountPerPerson, 
   formatCurrency 
 }: BalanceCalculationProps) => {
   return (
@@ -34,7 +33,6 @@ const BalanceCalculation = ({
           <ParticipantBalance
             key={participant.id}
             participant={participant}
-            amountPerPerson={amountPerPerson}
             formatCurrency={formatCurrency}
           />
         ))}

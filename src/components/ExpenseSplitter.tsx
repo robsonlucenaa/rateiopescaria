@@ -23,6 +23,10 @@ const ExpenseSplitter = () => {
     setNewExpenseAmount,
     newExpensePaidBy,
     setNewExpensePaidBy,
+    allParticipantsShare,
+    setAllParticipantsShare,
+    newExpenseParticipantIds,
+    setNewExpenseParticipantIds,
     activeTab,
     setActiveTab,
     totalAmount,
@@ -36,6 +40,7 @@ const ExpenseSplitter = () => {
     removeParticipant,
     addExpense,
     removeExpense,
+    updateExpense,
     copyShareLink,
     startNewTrip,
     forceRefresh,
@@ -84,8 +89,13 @@ const ExpenseSplitter = () => {
             setNewExpenseAmount={setNewExpenseAmount}
             newExpensePaidBy={newExpensePaidBy}
             setNewExpensePaidBy={setNewExpensePaidBy}
+            allParticipantsShare={allParticipantsShare}
+            setAllParticipantsShare={setAllParticipantsShare}
+            newExpenseParticipantIds={newExpenseParticipantIds}
+            setNewExpenseParticipantIds={setNewExpenseParticipantIds}
             addExpense={addExpense}
             removeExpense={removeExpense}
+            updateExpense={updateExpense}
             formatCurrency={formatCurrency}
             onBack={() => setActiveTab("participants")}
             onNext={() => setActiveTab("summary")}
@@ -97,7 +107,6 @@ const ExpenseSplitter = () => {
             participants={participants}
             expenses={expenses}
             totalAmount={totalAmount}
-            amountPerPerson={amountPerPerson}
             formatCurrency={formatCurrency}
             onBack={() => setActiveTab("expenses")}
           />

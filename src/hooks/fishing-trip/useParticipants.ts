@@ -26,7 +26,15 @@ export function useParticipants() {
   };
 
   const removeParticipant = (id: string, expenses: any[], setExpenses: (expenses: any[]) => void) => {
-    setExpenses(expenses.filter(expense => expense.paidBy !== id));
+    setExpenses(
+      expenses
+        .filter(expense => expense.paidBy !== id)
+        .map(expense => {
+          if (!expense.participantIds) return expense;
+          const remainingIds = expense.participantIds.filter((participantId: string) => participantId !== id);
+          return { ...expense, participantIds: remainingIds.length > 0 ? remainingIds : undefined };
+        })
+    );
     setParticipants(participants.filter((p) => p.id !== id));
   };
 

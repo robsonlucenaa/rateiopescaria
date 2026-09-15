@@ -5,19 +5,18 @@ interface ParticipantWithBalance {
   id: string;
   name: string;
   paid: number;
+  owed: number;
   balance: number;
   status: "positive" | "negative";
 }
 
 interface ParticipantBalanceProps {
   participant: ParticipantWithBalance;
-  amountPerPerson: number;
   formatCurrency: (value: number) => string;
 }
 
 const ParticipantBalance = ({ 
   participant, 
-  amountPerPerson, 
   formatCurrency 
 }: ParticipantBalanceProps) => {
   return (
@@ -41,7 +40,7 @@ const ParticipantBalance = ({
         </span>
       </div>
       <div className="text-sm text-muted-foreground mt-1">
-        Pagou: {formatCurrency(participant.paid)} | Deveria pagar: {formatCurrency(amountPerPerson)}
+        Pagou: {formatCurrency(participant.paid)} | Participação: {formatCurrency(participant.owed)}
       </div>
     </div>
   );
